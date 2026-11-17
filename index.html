@@ -24,14 +24,28 @@ h1,h2{font-family:"Barlow Condensed","Arial Narrow",Impact,system-ui,sans-serif;
 .quick{grid-template-columns:repeat(2,minmax(0,1fr))}.quick p{margin:6px 0 14px}.fields,.expense-form{grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 0}.fields label:last-child:nth-child(3),.expense-form label:first-child,.form-actions{grid-column:1/-1}.form-actions,.entry-actions{display:flex;gap:7px;flex-wrap:wrap}.expense-form{border-top:1px solid var(--edge);padding-top:13px}.section-top{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}.section-top .primary{flex:none}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--edge)}.row span{min-width:0;overflow-wrap:anywhere}.row strong{white-space:nowrap}.row:last-child{border-bottom:0}.expense-entry{display:grid;grid-template-columns:minmax(0,1fr) auto auto}.remove{padding:5px 8px;font-size:.85rem}.chart{display:flex;align-items:center;gap:22px;margin:10px 0 12px}.ring{flex:0 0 128px;aspect-ratio:1;border-radius:50%;position:relative;background:#ffffff25;display:grid;place-items:center}.ring:before{content:"";position:absolute;inset:15px;background:#241a24;border-radius:50%}.ring span{position:relative;font-weight:750;max-width:95px;text-align:center;overflow-wrap:anywhere}.legend{flex:1;min-width:0}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.callout{background:#4f202e80;border:1px solid #eb63704d;border-radius:10px;padding:12px;margin-top:12px}.callout strong{color:#ffadb5}.callout p,small{display:block;margin-top:7px}.demo,.error{margin-bottom:12px;color:#ffadb5}.empty{padding:10px 0}footer{padding:25px 0 36px;color:var(--muted);font-size:.87rem}
 @media(max-width:960px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:720px){.wrap{padding:0 15px}.hero{min-height:0;padding:22px;align-items:start;flex-direction:column;margin-top:16px}.shell{grid-template-columns:1fr}.menu{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}.menu button{padding:8px}.card{padding:15px}.menu{padding:7px}.quick{gap:8px}.quick button{width:100%;padding:8px}.chart{gap:12px}.ring{flex-basis:88px}.ring:before{inset:10px}.ring span{font-size:.75rem;max-width:64px}.expense-entry{grid-template-columns:minmax(0,1fr) auto}.entry-actions{grid-column:1/-1}}
+.header-actions,.profile-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.header-actions button{max-width:100%;overflow-wrap:anywhere}.profile-gate{max-width:580px;margin:38px auto}.profile-gate label{display:block;margin:15px 0}.profile-actions{margin-top:12px}.profile-gate small{margin-top:16px}.plan{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin:13px 0}.plan div{border:1px solid var(--edge);border-radius:10px;padding:10px;background:#29162280}.plan strong{display:block;color:#ff8993;font-size:1.65rem;line-height:1.15}.plan span{font-size:.88rem}.repeat-option{grid-column:1/-1;display:flex;align-items:center;gap:8px}.repeat-option input{width:auto;margin:0;accent-color:var(--hot)}.repeat-note{grid-column:1/-1;margin:0}.profile-gate .repeat-option{display:flex}
+@media(max-width:720px){.plan{grid-template-columns:repeat(2,minmax(0,1fr))}.header-actions{justify-content:end}.header-actions button{font-size:.8rem;padding:6px 8px}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div class="brand">Budget <span>Clair</span></div><button id="demo" type="button">Voir un exemple</button></div></header>
+<header><div class="wrap"><div class="brand">Budget <span>Clair</span></div><div class="header-actions"><button id="profile-switch" type="button" hidden></button><button id="demo" type="button" hidden>Voir un exemple</button></div></div></header>
 <main class="wrap">
+<p id="storage-error" class="error" role="status" hidden>La sauvegarde locale est indisponible. Les saisies sont disponibles pendant cette session.</p>
+<section id="profile-gate" class="card profile-gate" hidden>
+<h1>Ton profil</h1><p>Choisis ton prénom ou saisis-en un pour créer ton espace budget.</p>
+<div id="saved-profiles" class="profile-actions" aria-label="Profils enregistrés"></div>
+<form id="profile-form">
+<label>Prénom<input id="profile-name" maxlength="32" required placeholder="Anas, par exemple"></label>
+<label id="import-label" class="repeat-option" hidden><input id="import-old" type="checkbox" checked> Récupérer le budget déjà saisi dans ce navigateur</label>
+<button type="submit" class="primary">Ouvrir mon budget</button>
+<button type="button" id="profile-back" hidden>Retour au budget</button>
+</form>
+<small>Les profils sont enregistrés dans ce navigateur. Les personnes qui utilisent ce navigateur peuvent ouvrir les profils.</small>
+</section>
+<div id="app-content" hidden>
 <div class="hero"><div><h1>Mon budget</h1><p>Suis ton salaire, tes dépenses et ce qu’il te reste à la fin du mois.</p></div><label>Mois suivi<input id="month" type="month" min="2000-01" max="2099-12" required></label></div>
 <p id="demo-note" class="demo" hidden>Exemple fictif · tes données restent intactes.</p>
-<p id="storage-error" class="error" role="status" hidden>La sauvegarde locale est indisponible. Garde cette page ouverte pour conserver tes saisies pendant la session.</p>
 <div class="shell">
 <nav class="card menu" aria-label="Sections du budget">
 <button type="button" data-view="overview" aria-controls="overview" aria-current="page">Vue d’ensemble</button>
@@ -44,6 +58,17 @@ h1,h2{font-family:"Barlow Condensed","Arial Narrow",Impact,system-ui,sans-serif;
 <div>
 <section id="overview" class="stack" aria-labelledby="overview-title">
 <div class="section-head"><h2 id="overview-title" tabindex="-1">Vue d’ensemble</h2><p>Tout ce qui entre et sort pour le mois sélectionné.</p></div>
+<div class="card">
+<h3>Plan du mois · % du salaire net</h3>
+<div class="plan">
+<div><strong>50 %</strong><span>Charges fixes</span></div>
+<div><strong>25 %</strong><span>Dépenses du quotidien</span></div>
+<div><strong>5 %</strong><span>Imprévus</span></div>
+<div><strong>15 %</strong><span>Épargne et projets</span></div>
+<div><strong>5 %</strong><span>Investissement</span></div>
+</div>
+<p>Repère à adapter à tes charges. Tant que ta réserve de précaution reste à constituer, ajoute les 5 % prévus pour l’investissement à ton épargne.</p>
+</div>
 <div class="metrics">
 <div class="card metric"><span class="muted">Salaire net</span><strong id="income">—</strong><small id="income-source"></small></div>
 <div class="card metric"><span class="muted">Charges fixes</span><strong id="fixed-total"></strong></div>
@@ -79,6 +104,7 @@ h1,h2{font-family:"Barlow Condensed","Arial Narrow",Impact,system-ui,sans-serif;
 </div>
 </div>
 <footer>Les saisies sont enregistrées dans ce navigateur, pour le mois sélectionné.</footer>
+</div>
 </main>
 <script>
 
@@ -111,24 +137,122 @@ function calculate(budget) {
   return {totals, spent, estimated, income, left, goal, margin, savings};
 }
 
-let budgets = {};
+const profileKey = 'budget-clair-profiles-v1';
+let registry = {active: null, profiles: []};
+let previousBudgets = {};
 try {
-  budgets = JSON.parse(localStorage.getItem(storageKey)) || {};
+  registry = JSON.parse(localStorage.getItem(profileKey)) || registry;
+  if (!registry.profiles.length) previousBudgets = JSON.parse(localStorage.getItem(storageKey)) || {};
 } catch {
   $('storage-error').hidden = false;
 }
+let profile = registry.profiles.find(item => item.id === registry.active) || null;
 const now = new Date();
-let month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+let month = thisMonth;
 let demoBudget = null;
-const current = () => demoBudget || (budgets[month] ??= {...defaults, expenses: []});
+const current = () => demoBudget || (profile.budgets[month] ??= {...defaults, expenses: []});
 
 function save() {
   if (demoBudget) return;
   try {
-    localStorage.setItem(storageKey, JSON.stringify(budgets));
+    localStorage.setItem(profileKey, JSON.stringify(registry));
   } catch {
     $('storage-error').hidden = false;
   }
+}
+
+function syncCharges() {
+  if (demoBudget) return;
+  const budget = current();
+  budget.expenses = budget.expenses.filter(entry => !entry.series);
+  for (const rule of profile.charges) {
+    if (rule.from <= month && (!rule.until || month < rule.until)) {
+      budget.expenses.push({...rule.entry, series: rule.id});
+    }
+  }
+}
+
+function endSeries(id) {
+  profile.charges = profile.charges.filter(rule => rule.id !== id || rule.from < month);
+  for (const rule of profile.charges) {
+    if (rule.id === id && (!rule.until || month < rule.until)) rule.until = month;
+  }
+}
+
+function storeExpense(entry, repeat) {
+  const expenses = current().expenses;
+  const previous = editing === null ? null : expenses[editing];
+  if (previous?.series) endSeries(previous.series);
+  if (editing !== null) expenses.splice(editing, 1);
+  if (repeat && !demoBudget) {
+    profile.charges.push({id: previous?.series || newId(), from: month, entry});
+  } else {
+    expenses.push(entry);
+  }
+  syncCharges();
+}
+
+function newId() {
+  return globalThis.crypto?.randomUUID?.() || Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+function refreshProfiles() {
+  const list = $('saved-profiles');
+  list.replaceChildren();
+  for (const item of registry.profiles) {
+    const button = element('button', item.name);
+    button.type = 'button';
+    button.onclick = () => openProfile(item);
+    list.append(button);
+  }
+  $('profile-back').hidden = !profile;
+  $('import-label').hidden = registry.profiles.length > 0 || !Object.keys(previousBudgets).length;
+}
+
+function openProfile(item) {
+  profile = item;
+  registry.active = item.id;
+  month = thisMonth;
+  $('month').value = month;
+  $('profile-switch').textContent = item.name + ' · Changer';
+  $('profile-gate').hidden = true;
+  $('app-content').hidden = false;
+  $('profile-switch').hidden = false;
+  $('demo').hidden = false;
+  syncCharges();
+  save();
+  showView('overview', false);
+  loadInputs();
+}
+
+function showProfiles() {
+  if (demoBudget) $('demo').click();
+  $('app-content').hidden = true;
+  $('profile-gate').hidden = false;
+  $('profile-switch').hidden = true;
+  $('demo').hidden = true;
+  refreshProfiles();
+  $('profile-name').focus();
+}
+
+function createOrOpenProfile(event) {
+  event.preventDefault();
+  const input = $('profile-name');
+  const name = input.value.trim().replace(/\s+/g, ' ');
+  if (!name) {
+    input.setCustomValidity('Saisis ton prénom.');
+    input.reportValidity();
+    return;
+  }
+  let item = registry.profiles.find(candidate => candidate.name.toLocaleLowerCase('fr') === name.toLocaleLowerCase('fr'));
+  if (!item) {
+    const budgets = !registry.profiles.length && $('import-old').checked ? previousBudgets : {};
+    item = {id: newId(), name, budgets, charges: []};
+    registry.profiles.push(item);
+  }
+  input.value = '';
+  openProfile(item);
 }
 
 function element(tag, text, className) {
@@ -187,7 +311,11 @@ function resetExpenseForm() {
 function openExpenseForm(view, index = null) {
   resetExpenseForm();
   showView(view, false);
-  const {form, label, category, amount, submit, toggle} = forms[view];
+  const {form, label, category, amount, repeat, submit, toggle} = forms[view];
+  if (repeat) {
+    repeat.disabled = Boolean(demoBudget);
+    repeat.checked = !demoBudget && index === null;
+  }
   form.hidden = false;
   toggle.setAttribute('aria-expanded', 'true');
   if (index !== null) {
@@ -196,6 +324,7 @@ function openExpenseForm(view, index = null) {
     label.value = expense.label;
     category.value = expense.category;
     amount.value = expense.amount / 100;
+    if (repeat) repeat.checked = Boolean(expense.series);
     submit.textContent = 'Enregistrer la modification';
   }
   label.focus();
@@ -212,16 +341,17 @@ for (const [view, settings] of Object.entries(expenseViews)) {
       <label>Libellé<input name="label" required maxlength="65" placeholder="${settings.placeholder}"></label>
       <label>${view === 'daily' ? 'Catégorie' : 'Type'}<select name="category"></select></label>
       <label>Montant (€)<input name="amount" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" required></label>
+      ${view === 'fixed' ? '<label class="repeat-option"><input name="repeat" type="checkbox"> Reprendre cette charge tous les mois</label><small class="repeat-note">Les changements s’appliquent à partir du mois sélectionné.</small>' : ''}
       <div class="form-actions"><button class="primary" type="submit">${settings.add}</button><button type="button">Annuler</button></div>
     </form>
     <div class="expense-list"></div>`;
   const form = section.querySelector('form');
   const toggle = section.querySelector('.section-top button');
-  const {label, category, amount} = form.elements;
+  const {label, category, amount, repeat} = form.elements;
   const submit = form.querySelector('[type=submit]');
   const cancel = form.querySelector('[type=button]');
   const list = section.querySelector('.expense-list');
-  forms[view] = {settings, form, label, category, amount, submit, toggle, list};
+  forms[view] = {settings, form, label, category, amount, repeat, submit, toggle, list};
   for (const key of settings.categories) category.add(new Option(categories[key].label, key));
   category.closest('label').hidden = settings.categories.length === 1;
   toggle.onclick = () => openExpenseForm(view);
@@ -239,8 +369,7 @@ for (const [view, settings] of Object.entries(expenseViews)) {
       return;
     }
     const entry = {label: name, category: category.value, amount: toCents(amount.valueAsNumber)};
-    if (editing === null) current().expenses.push(entry);
-    else current().expenses[editing] = entry;
+    storeExpense(entry, repeat?.checked);
     resetExpenseForm();
     save();
     render();
@@ -266,18 +395,21 @@ function renderExpenses() {
     for (const [index, expense] of entries) {
       if (!settings.categories.includes(expense.category)) continue;
       total += expense.amount;
-      const label = view === 'daily' ? expense.label + ' · ' + categories[expense.category].label : expense.label;
+      const label = view === 'daily' ? expense.label + ' · ' + categories[expense.category].label : expense.label + (expense.series ? ' · Mensuelle' : '');
       const row = line(label, expense.amount);
       row.classList.add('expense-entry');
       const edit = element('button', 'Modifier', 'remove');
       edit.type = 'button';
       edit.setAttribute('aria-label', 'Modifier ' + expense.label);
       edit.onclick = () => openExpenseForm(view, index);
-      const remove = element('button', 'Supprimer', 'remove');
+      const remove = element('button', expense.series ? 'Arrêter' : 'Supprimer', 'remove');
       remove.type = 'button';
-      remove.setAttribute('aria-label', 'Supprimer ' + expense.label);
+      remove.setAttribute('aria-label', (expense.series ? 'Arrêter à partir de ce mois · ' : 'Supprimer ') + expense.label);
+      if (expense.series) remove.title = 'Arrêter à partir du mois sélectionné';
       remove.onclick = () => {
+        if (expense.series) endSeries(expense.series);
         current().expenses.splice(index, 1);
+        syncCharges();
         resetExpenseForm();
         save();
         render();
@@ -399,6 +531,7 @@ $('month').onchange = () => {
     return;
   }
   month = $('month').value;
+  syncCharges();
   loadInputs();
 };
 $('demo').onclick = () => {
@@ -417,7 +550,13 @@ $('demo').onclick = () => {
   showView('overview', false);
   loadInputs();
 };
-loadInputs();
+$('profile-switch').onclick = showProfiles;
+$('profile-back').onclick = () => openProfile(profile);
+$('profile-form').onsubmit = createOrOpenProfile;
+$('profile-name').oninput = event => event.target.setCustomValidity('');
+if (profile) openProfile(profile);
+else showProfiles();
 </script>
 </body>
 </html>
+
