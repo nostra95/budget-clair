@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="description" content="Un tableau de bord pour suivre ses dépenses, répartir son salaire et préparer son épargne.">
+<title>Budget Clair · Tableau de bord</title>
+<style>
+:root{color-scheme:dark;--bg:#101613;--card:#19221d;--edge:#35443b;--text:#f6f8ee;--muted:#b6c3b8;--lime:#dafa83;--peach:#ffb08f;--sage:#82c7aa;--blue:#aabcf6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "DM Sans",system-ui,sans-serif}
+main,nav{width:min(1180px,calc(100% - 40px));margin:auto}
+header{border-bottom:1px solid var(--edge)}
+nav{display:flex;justify-content:space-between;align-items:center;gap:14px;min-height:70px}
+.brand{font-weight:800;display:flex;align-items:center;gap:10px}.brand-mark{color:#152011;background:var(--lime);border-radius:10px;padding:4px 8px}
+.hero{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:34px 0 22px}
+h1,h2,h3,p{margin:0}h1{font-size:clamp(2.2rem,5vw,4.2rem);line-height:1.02;letter-spacing:-.07em;margin-bottom:10px}
+h2{font-size:1.34rem;letter-spacing:-.035em;margin-bottom:12px}h3{font-size:1rem}
+p,small,label,.muted{color:var(--muted)}small{display:block;margin-top:8px}a{color:var(--lime)}
+button,input,select{font:inherit}button,input,select{border:1px solid var(--edge);border-radius:9px;background:#101713;color:var(--text);padding:9px 11px;min-width:0}button{cursor:pointer;font-weight:650}button:hover{border-color:var(--lime)}button.primary{color:#152011;background:var(--lime);border-color:var(--lime)}button.remove{padding:4px 9px}.negative{color:var(--peach)!important}
+input,select{width:100%;margin-top:4px}input[type=month]{min-width:150px}.demo{margin-bottom:14px;color:var(--lime)}
+:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
+.metrics,.columns,.fields,.expense-form{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}.columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.stack{display:grid;gap:16px;min-width:0}
+.card{border:1px solid var(--edge);background:var(--card);border-radius:19px;padding:20px;min-width:0}.metric strong{display:block;font-size:clamp(1.25rem,3vw,2.25rem);letter-spacing:-.06em;overflow-wrap:anywhere}.metric:first-child{background:#223426}.metric:last-child strong{color:var(--lime)}.fields{grid-template-columns:repeat(2,minmax(0,1fr));margin:12px 0}.expense-form{grid-template-columns:1fr 1fr .75fr;align-items:end;margin:12px 0}.expense-form button{grid-column:1/-1;justify-self:start}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--edge)}.row span{min-width:0;overflow-wrap:anywhere}.row strong{white-space:nowrap}.row:last-child{border-bottom:0}.chart{display:flex;align-items:center;gap:22px;margin:8px 0 12px}.ring{flex:0 0 125px;aspect-ratio:1;border-radius:50%;position:relative;background:var(--edge);display:grid;place-items:center}.ring:before{content:"";position:absolute;inset:15px;background:var(--card);border-radius:50%}.ring span{position:relative;font-weight:750;max-width:95px;text-align:center;overflow-wrap:anywhere}.legend{flex:1;min-width:0}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.callout{background:#223426;border-radius:10px;padding:12px;margin-top:12px}.callout strong{color:var(--lime)}.callout p{margin-top:4px}.error{color:var(--peach)}footer{padding:24px 0 32px;color:var(--muted);font-size:.88rem}.empty{padding:10px 0}.small-label{font-size:.88rem}
+@media(max-width:850px){.columns{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){main,nav{width:calc(100% - 24px)}.hero{align-items:start;flex-direction:column;margin-top:22px}.card{padding:14px}.metrics{gap:8px}.chart{gap:12px}.ring{flex-basis:90px}.ring:before{inset:10px}.ring span{font-size:.76rem;max-width:65px}.expense-form{grid-template-columns:1fr 1fr}.expense-form label:first-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><nav><div class="brand"><span class="brand-mark" aria-hidden="true">▥</span> Budget Clair</div><button id="demo" type="button">Voir un exemple</button></nav></header>
+<main>
+<section class="hero"><div><h1>Budget du mois</h1><p>Suivez vos dépenses et calculez ce que vous pouvez mettre de côté.</p></div><label>Mois suivi<input id="month" type="month" min="2000-01" max="2099-12" required></label></section>
+<p id="demo-note" class="demo" hidden>Exemple fictif · vos données restent intactes.</p>
+<p id="storage-error" class="error" role="status" hidden>La sauvegarde locale est indisponible. Gardez cette page ouverte pour conserver vos saisies pendant la session.</p>
+<section class="metrics" aria-label="Résumé du mois">
+<div class="card metric"><span class="muted">Net du mois</span><strong id="income">—</strong><small id="income-source"></small></div>
+<div class="card metric"><span class="muted">Total dépensé</span><strong id="spent">0 €</strong></div>
+<div class="card metric"><span class="muted">Imprévus</span><strong id="unexpected">0 €</strong></div>
+<div class="card metric"><span class="muted">Reste avant épargne</span><strong id="left">—</strong></div>
+</section>
+<div class="columns">
+<div class="stack">
+<section class="card"><h2>Salaire mensuel</h2>
+<div class="fields"><label>Brut (€)<input id="gross" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="2 600"></label>
+<label>Net reçu après impôt (€)<input id="net" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="Facultatif"></label></div>
+<label>Taux de conversion brut → net après impôt (%)<input id="ratio" type="number" min="0" max="100" step=".1" inputmode="decimal"></label>
+<small>Le budget utilise le net reçu si vous le renseignez. Sinon, il applique le taux indicatif au brut. Le taux initial de 75 % est une hypothèse modifiable. <a href="https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net" target="_blank" rel="noopener noreferrer">Simulateur Urssaf</a>.</small>
+</section>
+<section class="card"><h2>Dépenses du mois</h2><p>Ajoutez chaque dépense une seule fois.</p>
+<form id="expense-form" class="expense-form">
+<label>Libellé<input id="label" required maxlength="65" placeholder="Loyer, courses, garage…"></label>
+<label>Catégorie<select id="category"></select></label>
+<label>Montant (€)<input id="amount" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" placeholder="0,00" required></label>
+<button class="primary" id="add-expense">Ajouter la dépense</button><button type="button" id="cancel-edit" hidden>Annuler la modification</button>
+</form>
+<div id="expenses"></div>
+</section>
+</div>
+<div class="stack">
+<section class="card"><h2>Où part l’argent ?</h2>
+<div class="chart"><div id="ring" class="ring" aria-hidden="true"><span id="ring-total"></span></div><div id="legend" class="legend"></div></div><p id="top"></p>
+</section>
+<section class="card"><h2>Répartition du salaire</h2><p>Charges fixes et dépenses courantes d’abord. L’épargne proposée s’ajuste au reste réel.</p>
+<div class="fields"><label>Objectif d’épargne (% du net)<input id="goal" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
+<label>Marge à garder (€)<input id="buffer" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label></div>
+<div id="allocation"></div>
+</section>
+<section class="card"><h2>Épargne et investissement</h2>
+<p>Comparez votre réserve disponible à votre objectif avant d’envisager d’investir.</p>
+<div class="fields"><label>Réserve actuelle (€)<input id="reserve" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="À renseigner"></label>
+<label>Objectif de réserve (€)<input id="target" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" placeholder="À définir"></label></div>
+<div class="callout"><strong id="invest-title"></strong><p id="invest-detail"></p></div>
+<small><a href="https://www.amf-france.org/fr/espace-epargnants/actualites-mises-en-garde/vous-avez-un-capital-placer-que-faire" target="_blank" rel="noopener noreferrer">Épargne de précaution et investissement · AMF</a></small>
+</section>
+</div>
+</div>
+<footer>Les saisies sont enregistrées dans ce navigateur. Le site ne les transmet à aucun serveur.</footer>
+</main>
+<script>
+'use strict';
+
+const categories = {
+  fixed: {label: 'Charges fixes', color: '#82c7aa'},
+  essentials: {label: 'Vie courante', color: '#dafa83'},
+  leisure: {label: 'Loisirs et extras', color: '#aabcf6'},
+  unexpected: {label: 'Imprévus', color: '#ffb08f'}
+};
+const defaults = {gross: null, net: null, ratio: 75, goal: 20, buffer: 100, reserve: null, target: null};
+const storageKey = 'budget-clair-v1';
+const $ = id => document.getElementById(id);
+const formatter = new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'});
+const money = cents => cents === null ? '—' : formatter.format(cents / 100);
+const toCents = value => Math.round((value ?? 0) * 100);
+
+function calculate(budget) {
+  const totals = Object.fromEntries(Object.keys(categories).map(key => [key, 0]));
+  for (const entry of budget.expenses) totals[entry.category] += entry.amount;
+  const spent = Object.values(totals).reduce((sum, amount) => sum + amount, 0);
+  const estimated = budget.net === null && budget.gross !== null && budget.ratio !== null;
+  const income = budget.net !== null ? toCents(budget.net) :
+    estimated ? Math.round(toCents(budget.gross) * budget.ratio / 100) : null;
+  const left = income === null ? null : income - spent;
+  const goal = income === null ? null : Math.round(income * (budget.goal ?? 0) / 100);
+  const margin = left === null ? null : Math.min(Math.max(0, left), toCents(budget.buffer));
+  const savings = left === null ? null : Math.min(goal, Math.max(0, left - margin));
+  return {totals, spent, estimated, income, left, goal, margin, savings};
+}
+
+let budgets = {};
+try {
+  budgets = JSON.parse(localStorage.getItem(storageKey)) || {};
+} catch {
+  $('storage-error').hidden = false;
+}
+const now = new Date();
+let month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+let demoBudget = null;
+let editing = null;
+const current = () => demoBudget || (budgets[month] ??= {...defaults, expenses: []});
+
+function save() {
+  if (demoBudget) return;
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(budgets));
+  } catch {
+    $('storage-error').hidden = false;
+  }
+}
+
+function element(tag, text, className) {
+  const node = document.createElement(tag);
+  node.textContent = text;
+  if (className) node.className = className;
+  return node;
+}
+
+function line(label, amount) {
+  const row = element('div', '', 'row');
+  row.append(element('span', label), element('strong', money(amount)));
+  return row;
+}
+
+function renderExpenses() {
+  const container = $('expenses');
+  container.replaceChildren();
+  if (!current().expenses.length) container.append(element('p', 'Aucune dépense saisie.', 'empty'));
+  current().expenses.forEach((expense, index) => {
+    const row = line(expense.label + ' · ' + categories[expense.category].label, expense.amount);
+    const edit = element('button', 'Modifier', 'remove');
+    edit.type = 'button';
+    edit.setAttribute('aria-label', 'Modifier ' + expense.label);
+    edit.onclick = () => {
+      editing = index;
+      $('label').value = expense.label;
+      $('category').value = expense.category;
+      $('amount').value = expense.amount / 100;
+      $('add-expense').textContent = 'Enregistrer';
+      $('cancel-edit').hidden = false;
+      $('label').focus();
+    };
+    const remove = element('button', '×', 'remove');
+    remove.type = 'button';
+    remove.setAttribute('aria-label', 'Supprimer ' + expense.label);
+    remove.onclick = () => {
+      current().expenses.splice(index, 1);
+      resetExpenseForm();
+      save();
+      render();
+    };
+    row.append(edit, remove);
+    container.append(row);
+  });
+}
+
+function renderChart(totals, spent) {
+  const ordered = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+  const legend = $('legend');
+  legend.replaceChildren();
+  const stops = [];
+  let cursor = 0;
+  for (const [key, amount] of ordered) {
+    const {label, color} = categories[key];
+    const row = line(label, amount);
+    const dot = element('i', '', 'dot');
+    dot.style.backgroundColor = color;
+    dot.setAttribute('aria-hidden', 'true');
+    row.firstElementChild.prepend(dot);
+    legend.append(row);
+    if (amount > 0) {
+      const end = cursor + amount * 100 / spent;
+      stops.push(color + ' ' + cursor + '% ' + end + '%');
+      cursor = end;
+    }
+  }
+  $('ring').style.background = stops.length ? 'conic-gradient(' + stops.join(',') + ')' : '';
+  $('ring-total').textContent = money(spent);
+  $('top').textContent = spent ? 'Premier poste · ' + categories[ordered[0][0]].label +
+    ' (' + Math.round(ordered[0][1] * 100 / spent) + ' % du total).' : 'Ajoutez une dépense pour voir la répartition.';
+}
+
+function renderSavings(budget, data) {
+  const {totals, income, left, goal, margin, savings} = data;
+  const allocation = $('allocation');
+  allocation.replaceChildren(
+    line('Charges fixes et vie courante', totals.fixed + totals.essentials),
+    line('Loisirs et extras', totals.leisure),
+    line('Imprévus saisis', totals.unexpected),
+    line('Marge conservée sur le compte', margin),
+    line('Objectif d’épargne du mois', goal),
+    line('Épargne possible ce mois-ci', savings),
+    line('Disponible après marge et épargne', left === null ? null : left - margin - savings)
+  );
+  let title = 'Net mensuel requis';
+  let detail = 'Renseignez votre revenu pour calculer votre capacité d’épargne.';
+  if (income !== null) {
+    if (savings <= 0) {
+      title = 'Aucune enveloppe d’investissement ce mois-ci';
+      detail = left < 0 ? 'Vos dépenses dépassent le revenu de ' + money(-left) + '.' :
+        'Votre budget, votre marge et votre objectif actuel donnent une épargne proposée de 0 €.';
+    } else if (budget.reserve === null || budget.target === null || budget.target <= 0) {
+      title = 'Réserve à renseigner';
+      detail = 'Indiquez le montant déjà disponible et votre objectif de réserve pour calculer une enveloppe.';
+    } else {
+      const gap = Math.max(0, toCents(budget.target) - toCents(budget.reserve));
+      const toReserve = Math.min(gap, savings);
+      const investable = savings - toReserve;
+      title = investable > 0 ? 'Enveloppe à étudier · ' + money(investable) : 'Priorité à la réserve';
+      detail = (toReserve > 0 ? money(toReserve) + ' à prévoir pour compléter la réserve ce mois-ci. ' : '') +
+        (investable > 0 ? 'Montant indicatif après vos dépenses, votre marge et la réserve prévue. Tenez compte de vos projets, de l’horizon de placement et du risque de perte.' :
+        'Votre capacité d’épargne du mois est affectée à votre réserve.');
+    }
+    if (data.estimated) detail += ' Calcul basé sur le net estimé.';
+  }
+  $('invest-title').textContent = title;
+  $('invest-detail').textContent = detail;
+}
+
+function render() {
+  const budget = current();
+  const data = calculate(budget);
+  $('income').textContent = money(data.income);
+  $('income-source').textContent = data.estimated ? 'Estimation à partir du brut' : budget.net === null ? 'À renseigner' : 'Net reçu renseigné';
+  $('spent').textContent = money(data.spent);
+  $('unexpected').textContent = money(data.totals.unexpected);
+  $('left').textContent = money(data.left);
+  $('left').classList.toggle('negative', data.left < 0);
+  renderChart(data.totals, data.spent);
+  renderSavings(budget, data);
+  renderExpenses();
+}
+
+function resetExpenseForm() {
+  editing = null;
+  $('expense-form').reset();
+  $('label').setCustomValidity('');
+  $('add-expense').textContent = 'Ajouter la dépense';
+  $('cancel-edit').hidden = true;
+}
+
+function loadInputs() {
+  resetExpenseForm();
+  for (const key of Object.keys(defaults)) $(key).value = current()[key] ?? '';
+  render();
+}
+
+for (const [key, {label}] of Object.entries(categories)) $('category').add(new Option(label, key));
+for (const key of Object.keys(defaults)) {
+  $(key).addEventListener('input', event => {
+    const field = event.target;
+    field.setAttribute('aria-invalid', String(!field.validity.valid));
+    if (!field.validity.valid) return;
+    current()[key] = field.value === '' ? null : field.valueAsNumber;
+    save();
+    render();
+  });
+  $(key).addEventListener('change', event => {
+    if (!event.target.validity.valid) {
+      event.target.value = current()[key] ?? '';
+      event.target.setAttribute('aria-invalid', 'false');
+    }
+  });
+}
+$('month').value = month;
+$('month').onchange = () => {
+  if (!$('month').validity.valid) {
+    $('month').value = month;
+    return;
+  }
+  month = $('month').value;
+  loadInputs();
+};
+$('cancel-edit').onclick = resetExpenseForm;
+$('expense-form').onsubmit = event => {
+  event.preventDefault();
+  const field = $('label');
+  const label = field.value.trim();
+  if (!label) {
+    field.setCustomValidity('Saisissez un libellé.');
+    field.reportValidity();
+    return;
+  }
+  const entry = {label, category: $('category').value, amount: toCents($('amount').valueAsNumber)};
+  if (editing === null) current().expenses.push(entry);
+  else current().expenses[editing] = entry;
+  resetExpenseForm();
+  save();
+  render();
+  field.focus();
+};
+$('label').oninput = () => $('label').setCustomValidity('');
+$('demo').onclick = () => {
+  demoBudget = demoBudget ? null : {
+    ...defaults, gross: 2600, net: 2000, reserve: 2800, target: 3000,
+    expenses: [
+      {label: 'Loyer et factures', category: 'fixed', amount: 82000},
+      {label: 'Courses et transport', category: 'essentials', amount: 34000},
+      {label: 'Sorties', category: 'leisure', amount: 16000},
+      {label: 'Réparation voiture', category: 'unexpected', amount: 18000}
+    ]
+  };
+  $('demo').textContent = demoBudget ? 'Revenir à mon budget' : 'Voir un exemple';
+  $('demo-note').hidden = !demoBudget;
+  $('month').disabled = Boolean(demoBudget);
+  loadInputs();
+};
+loadInputs();
+</script>
+</body>
+</html>
