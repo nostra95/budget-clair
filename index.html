@@ -3,88 +3,92 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="Un tableau de bord pour suivre ses dépenses, répartir son salaire et préparer son épargne.">
+<meta name="description" content="Suivez votre salaire, vos charges, vos dépenses et votre épargne.">
 <title>Budget Clair · Tableau de bord</title>
 <style>
-:root{color-scheme:dark;--bg:#101613;--card:#19221d;--edge:#35443b;--text:#f6f8ee;--muted:#b6c3b8;--lime:#dafa83;--peach:#ffb08f;--sage:#82c7aa;--blue:#aabcf6}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 "DM Sans",system-ui,sans-serif}
-main,nav{width:min(1180px,calc(100% - 40px));margin:auto}
-header{border-bottom:1px solid var(--edge)}
-nav{display:flex;justify-content:space-between;align-items:center;gap:14px;min-height:70px}
-.brand{font-weight:800;display:flex;align-items:center;gap:10px}.brand-mark{color:#152011;background:var(--lime);border-radius:10px;padding:4px 8px}
-.hero{display:flex;justify-content:space-between;align-items:end;gap:18px;margin:34px 0 22px}
-h1,h2,h3,p{margin:0}h1{font-size:clamp(2.2rem,5vw,4.2rem);line-height:1.02;letter-spacing:-.07em;margin-bottom:10px}
-h2{font-size:1.34rem;letter-spacing:-.035em;margin-bottom:12px}h3{font-size:1rem}
-p,small,label,.muted{color:var(--muted)}small{display:block;margin-top:8px}a{color:var(--lime)}
-button,input,select{font:inherit}button,input,select{border:1px solid var(--edge);border-radius:9px;background:#101713;color:var(--text);padding:9px 11px;min-width:0}button{cursor:pointer;font-weight:650}button:hover{border-color:var(--lime)}button.primary{color:#152011;background:var(--lime);border-color:var(--lime)}button.remove{padding:4px 9px}.negative{color:var(--peach)!important}
-input,select{width:100%;margin-top:4px}input[type=month]{min-width:150px}.demo{margin-bottom:14px;color:var(--lime)}
-:focus-visible{outline:2px solid var(--lime);outline-offset:3px}
-.metrics,.columns,.fields,.expense-form{display:grid;gap:14px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:16px}.columns{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}.stack{display:grid;gap:16px;min-width:0}
-.card{border:1px solid var(--edge);background:var(--card);border-radius:19px;padding:20px;min-width:0}.metric strong{display:block;font-size:clamp(1.25rem,3vw,2.25rem);letter-spacing:-.06em;overflow-wrap:anywhere}.metric:first-child{background:#223426}.metric:last-child strong{color:var(--lime)}.fields{grid-template-columns:repeat(2,minmax(0,1fr));margin:12px 0}.expense-form{grid-template-columns:1fr 1fr .75fr;align-items:end;margin:12px 0}.expense-form button{grid-column:1/-1;justify-self:start}
-.row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--edge)}.row span{min-width:0;overflow-wrap:anywhere}.row strong{white-space:nowrap}.row:last-child{border-bottom:0}.chart{display:flex;align-items:center;gap:22px;margin:8px 0 12px}.ring{flex:0 0 125px;aspect-ratio:1;border-radius:50%;position:relative;background:var(--edge);display:grid;place-items:center}.ring:before{content:"";position:absolute;inset:15px;background:var(--card);border-radius:50%}.ring span{position:relative;font-weight:750;max-width:95px;text-align:center;overflow-wrap:anywhere}.legend{flex:1;min-width:0}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.callout{background:#223426;border-radius:10px;padding:12px;margin-top:12px}.callout strong{color:var(--lime)}.callout p{margin-top:4px}.error{color:var(--peach)}footer{padding:24px 0 32px;color:var(--muted);font-size:.88rem}.empty{padding:10px 0}.small-label{font-size:.88rem}
-@media(max-width:850px){.columns{grid-template-columns:1fr}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:520px){main,nav{width:calc(100% - 24px)}.hero{align-items:start;flex-direction:column;margin-top:22px}.card{padding:14px}.metrics{gap:8px}.chart{gap:12px}.ring{flex-basis:90px}.ring:before{inset:10px}.ring span{font-size:.76rem;max-width:65px}.expense-form{grid-template-columns:1fr 1fr}.expense-form label:first-child{grid-column:1/-1}}
+:root{color-scheme:dark;--ink:#faf5f6;--muted:#c6b7bd;--edge:#ffffff24;--red:#ff4957;--hot:#c91933;--glass:#211a21ba}
+*{box-sizing:border-box}body{margin:0;color:var(--ink);background:#100e13;font:15px/1.55 "DM Sans",system-ui,sans-serif;min-height:100vh}
+body::before{content:"";position:fixed;inset:0;z-index:-1;background:radial-gradient(ellipse at 94% 4%,#5d162b 0%,transparent 43%),radial-gradient(ellipse at 15% 72%,#2b1a26 0%,transparent 55%)}
+[hidden]{display:none!important}h1,h2,h3,p{margin:0}a{color:#ffadb5}p,small,.muted,label{color:var(--muted)}
+.wrap{max-width:1240px;margin:auto;padding:0 30px}
+header{background:#110e13ba;border-bottom:1px solid var(--edge);backdrop-filter:blur(15px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:68px}
+.brand{font-family:"Barlow Condensed","Arial Narrow",Impact,sans-serif;font-size:25px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;white-space:nowrap}.brand span{color:var(--red)}
+button,input,select{font:inherit;color:var(--ink);border:1px solid var(--edge);border-radius:10px;background:#151117;padding:10px 12px;min-width:0}button{cursor:pointer;font-weight:700}button:hover{border-color:var(--red)}button.primary{background:#c71935;color:white;border-color:#ff63766b}button.primary:hover{background:#a8112a}button:focus-visible,input:focus-visible,select:focus-visible,a:focus-visible,[tabindex]:focus-visible{outline:2px solid #ff8690;outline-offset:3px}
+input,select{display:block;width:100%;margin-top:5px}.hero{position:relative;isolation:isolate;overflow:hidden;display:flex;justify-content:space-between;align-items:end;gap:20px;min-height:223px;margin:26px 0 18px;padding:34px;border:1px solid #ffb3be42;border-radius:22px;background:linear-gradient(108deg,#171117 12%,#27121d 56%,#461020)}
+.hero::before,.hero::after{content:"";position:absolute;z-index:-1;pointer-events:none;inset:-35% -8% -55% 37%;filter:blur(22px);transform:rotate(-18deg);background:radial-gradient(ellipse at 62% 43%,#ff264985 0%,transparent 28%),radial-gradient(ellipse at 51% 67%,#682136 0%,transparent 36%),radial-gradient(ellipse at 76% 53%,#fff0f14a 0%,transparent 26%)}
+.hero::after{transform:rotate(13deg);filter:blur(35px);opacity:.75}.hero p{max-width:520px}.hero label{width:184px;flex:none;color:#fff}.hero input{background:#180c16ad}
+h1,h2{font-family:"Barlow Condensed","Arial Narrow",Impact,system-ui,sans-serif;line-height:1.06}h1{font-size:clamp(2.8rem,6vw,5rem);letter-spacing:-.035em;margin-bottom:10px}h2{font-size:clamp(1.8rem,4vw,2.45rem);letter-spacing:-.025em;margin-bottom:7px}h3{font-size:1.05rem}
+.shell{display:grid;grid-template-columns:215px minmax(0,1fr);gap:18px;align-items:start}.menu{display:grid;gap:6px;padding:9px;position:sticky;top:12px}.menu button{text-align:left;background:transparent;border-color:transparent}.menu button[aria-current]{background:#511c2a;border-color:#b33b51;color:white;box-shadow:inset 3px 0 var(--red)}.menu button:hover{background:#ffffff0c}
+.card{border:1px solid var(--edge);background:linear-gradient(145deg,#3c25374a,#18131bd9),var(--glass);backdrop-filter:blur(18px);border-radius:17px;box-shadow:0 10px 32px #0002;padding:22px;min-width:0}.section-head{margin:3px 0 18px}.stack{display:grid;gap:15px}.metrics,.quick,.fields,.expense-form{display:grid;gap:12px}.metrics{grid-template-columns:repeat(4,minmax(0,1fr))}.metric{padding:16px}.metric strong{display:block;font-size:clamp(1.12rem,2.4vw,1.75rem);letter-spacing:-.045em;overflow-wrap:anywhere}.metric:last-child{border-color:#ff657264}.metric:last-child strong,.negative{color:#ff8993}
+.quick{grid-template-columns:repeat(2,minmax(0,1fr))}.quick p{margin:6px 0 14px}.fields,.expense-form{grid-template-columns:repeat(2,minmax(0,1fr));margin:16px 0}.fields label:last-child:nth-child(3),.expense-form label:first-child,.form-actions{grid-column:1/-1}.form-actions,.entry-actions{display:flex;gap:7px;flex-wrap:wrap}.expense-form{border-top:1px solid var(--edge);padding-top:13px}.section-top{display:flex;justify-content:space-between;align-items:start;gap:12px;flex-wrap:wrap}.section-top .primary{flex:none}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--edge)}.row span{min-width:0;overflow-wrap:anywhere}.row strong{white-space:nowrap}.row:last-child{border-bottom:0}.expense-entry{display:grid;grid-template-columns:minmax(0,1fr) auto auto}.remove{padding:5px 8px;font-size:.85rem}.chart{display:flex;align-items:center;gap:22px;margin:10px 0 12px}.ring{flex:0 0 128px;aspect-ratio:1;border-radius:50%;position:relative;background:#ffffff25;display:grid;place-items:center}.ring:before{content:"";position:absolute;inset:15px;background:#241a24;border-radius:50%}.ring span{position:relative;font-weight:750;max-width:95px;text-align:center;overflow-wrap:anywhere}.legend{flex:1;min-width:0}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px}.callout{background:#4f202e80;border:1px solid #eb63704d;border-radius:10px;padding:12px;margin-top:12px}.callout strong{color:#ffadb5}.callout p,small{display:block;margin-top:7px}.demo,.error{margin-bottom:12px;color:#ffadb5}.empty{padding:10px 0}footer{padding:25px 0 36px;color:var(--muted);font-size:.87rem}
+@media(max-width:960px){.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.wrap{padding:0 15px}.hero{min-height:0;padding:22px;align-items:start;flex-direction:column;margin-top:16px}.shell{grid-template-columns:1fr}.menu{position:static;grid-template-columns:repeat(2,minmax(0,1fr))}.menu button{padding:8px}.card{padding:15px}.menu{padding:7px}.quick{gap:8px}.quick button{width:100%;padding:8px}.chart{gap:12px}.ring{flex-basis:88px}.ring:before{inset:10px}.ring span{font-size:.75rem;max-width:64px}.expense-entry{grid-template-columns:minmax(0,1fr) auto}.entry-actions{grid-column:1/-1}}
 </style>
 </head>
 <body>
-<header><nav><div class="brand"><span class="brand-mark" aria-hidden="true">▥</span> Budget Clair</div><button id="demo" type="button">Voir un exemple</button></nav></header>
-<main>
-<section class="hero"><div><h1>Budget du mois</h1><p>Suivez vos dépenses et calculez ce que vous pouvez mettre de côté.</p></div><label>Mois suivi<input id="month" type="month" min="2000-01" max="2099-12" required></label></section>
-<p id="demo-note" class="demo" hidden>Exemple fictif · vos données restent intactes.</p>
-<p id="storage-error" class="error" role="status" hidden>La sauvegarde locale est indisponible. Gardez cette page ouverte pour conserver vos saisies pendant la session.</p>
-<section class="metrics" aria-label="Résumé du mois">
-<div class="card metric"><span class="muted">Net du mois</span><strong id="income">—</strong><small id="income-source"></small></div>
-<div class="card metric"><span class="muted">Total dépensé</span><strong id="spent">0 €</strong></div>
-<div class="card metric"><span class="muted">Imprévus</span><strong id="unexpected">0 €</strong></div>
+<header><div class="wrap"><div class="brand">Budget <span>Clair</span></div><button id="demo" type="button">Voir un exemple</button></div></header>
+<main class="wrap">
+<div class="hero"><div><h1>Mon budget</h1><p>Suis ton salaire, tes dépenses et ce qu’il te reste à la fin du mois.</p></div><label>Mois suivi<input id="month" type="month" min="2000-01" max="2099-12" required></label></div>
+<p id="demo-note" class="demo" hidden>Exemple fictif · tes données restent intactes.</p>
+<p id="storage-error" class="error" role="status" hidden>La sauvegarde locale est indisponible. Garde cette page ouverte pour conserver tes saisies pendant la session.</p>
+<div class="shell">
+<nav class="card menu" aria-label="Sections du budget">
+<button type="button" data-view="overview" aria-controls="overview" aria-current="page">Vue d’ensemble</button>
+<button type="button" data-view="salary" aria-controls="salary">Salaire</button>
+<button type="button" data-view="fixed" aria-controls="fixed">Charges fixes</button>
+<button type="button" data-view="daily" aria-controls="daily">Dépenses du quotidien</button>
+<button type="button" data-view="unexpected-view" aria-controls="unexpected-view">Imprévus</button>
+<button type="button" data-view="savings" aria-controls="savings">Épargne</button>
+</nav>
+<div>
+<section id="overview" class="stack" aria-labelledby="overview-title">
+<div class="section-head"><h2 id="overview-title" tabindex="-1">Vue d’ensemble</h2><p>Tout ce qui entre et sort pour le mois sélectionné.</p></div>
+<div class="metrics">
+<div class="card metric"><span class="muted">Salaire net</span><strong id="income">—</strong><small id="income-source"></small></div>
+<div class="card metric"><span class="muted">Charges fixes</span><strong id="fixed-total"></strong></div>
+<div class="card metric"><span class="muted">Dépenses du quotidien</span><strong id="daily-total"></strong></div>
 <div class="card metric"><span class="muted">Reste avant épargne</span><strong id="left">—</strong></div>
-</section>
-<div class="columns">
-<div class="stack">
-<section class="card"><h2>Salaire mensuel</h2>
-<div class="fields"><label>Brut (€)<input id="gross" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="2 600"></label>
-<label>Net reçu après impôt (€)<input id="net" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="Facultatif"></label></div>
-<label>Taux de conversion brut → net après impôt (%)<input id="ratio" type="number" min="0" max="100" step=".1" inputmode="decimal"></label>
-<small>Le budget utilise le net reçu si vous le renseignez. Sinon, il applique le taux indicatif au brut. Le taux initial de 75 % est une hypothèse modifiable. <a href="https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net" target="_blank" rel="noopener noreferrer">Simulateur Urssaf</a>.</small>
-</section>
-<section class="card"><h2>Dépenses du mois</h2><p>Ajoutez chaque dépense une seule fois.</p>
-<form id="expense-form" class="expense-form">
-<label>Libellé<input id="label" required maxlength="65" placeholder="Loyer, courses, garage…"></label>
-<label>Catégorie<select id="category"></select></label>
-<label>Montant (€)<input id="amount" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" placeholder="0,00" required></label>
-<button class="primary" id="add-expense">Ajouter la dépense</button><button type="button" id="cancel-edit" hidden>Annuler la modification</button>
-</form>
-<div id="expenses"></div>
-</section>
 </div>
-<div class="stack">
-<section class="card"><h2>Où part l’argent ?</h2>
-<div class="chart"><div id="ring" class="ring" aria-hidden="true"><span id="ring-total"></span></div><div id="legend" class="legend"></div></div><p id="top"></p>
+<div class="quick">
+<div class="card"><h3>Charges fixes</h3><p>Loyer, abonnements, assurances.</p><button class="primary" type="button" data-add="fixed">Ajouter une charge</button></div>
+<div class="card"><h3>Dépenses du quotidien</h3><p>Courses, essence, restaurants.</p><button class="primary" type="button" data-add="daily">Ajouter une dépense</button></div>
+</div>
+<div class="card"><div class="section-top"><h3>Où part l’argent ?</h3><button type="button" data-add="unexpected-view">Ajouter un imprévu</button></div>
+<div class="chart"><div id="ring" class="ring" aria-hidden="true"><span id="ring-total"></span></div><div id="legend" class="legend"></div></div><p id="top"></p></div>
 </section>
-<section class="card"><h2>Répartition du salaire</h2><p>Charges fixes et dépenses courantes d’abord. L’épargne proposée s’ajuste au reste réel.</p>
+<section id="salary" class="card" hidden><h2 tabindex="-1">Salaire</h2><p>Renseigne le montant que tu reçois sur ton compte pour le mois sélectionné.</p>
+<div class="fields"><label>Net reçu après impôt (€)<input id="net" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label>
+<label>Salaire brut (€)<input id="gross" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label>
+<label>Taux brut → net après impôt (%)<input id="ratio" type="number" min="0" max="100" step=".1" inputmode="decimal"></label></div>
+<small>Le net reçu est utilisé en priorité. Avec le brut seul, le site applique un taux indicatif, réglé à 75 % au départ. <a href="https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net" target="_blank" rel="noopener noreferrer">Simulateur Urssaf</a>.</small>
+</section>
+<section id="fixed" class="card" hidden></section>
+<section id="daily" class="card" hidden></section>
+<section id="unexpected-view" class="card" hidden></section>
+<section id="savings" class="stack" hidden>
+<div class="card"><h2 tabindex="-1">Épargne du mois</h2><p>Calcule ce que tu peux mettre de côté après tes dépenses et ta marge.</p>
 <div class="fields"><label>Objectif d’épargne (% du net)<input id="goal" type="number" min="0" max="100" step="1" inputmode="numeric"></label>
-<label>Marge à garder (€)<input id="buffer" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label></div>
-<div id="allocation"></div>
-</section>
-<section class="card"><h2>Épargne et investissement</h2>
-<p>Comparez votre réserve disponible à votre objectif avant d’envisager d’investir.</p>
-<div class="fields"><label>Réserve actuelle (€)<input id="reserve" type="number" min="0" max="1000000" step=".01" inputmode="decimal" placeholder="À renseigner"></label>
-<label>Objectif de réserve (€)<input id="target" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" placeholder="À définir"></label></div>
+<label>Marge à garder (€)<input id="buffer" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label></div><div id="allocation"></div></div>
+<div class="card"><h3>Réserve de précaution et investissement</h3>
+<div class="fields"><label>Réserve actuelle (€)<input id="reserve" type="number" min="0" max="1000000" step=".01" inputmode="decimal"></label>
+<label>Objectif de réserve (€)<input id="target" type="number" min=".01" max="1000000" step=".01" inputmode="decimal"></label></div>
 <div class="callout"><strong id="invest-title"></strong><p id="invest-detail"></p></div>
-<small><a href="https://www.amf-france.org/fr/espace-epargnants/actualites-mises-en-garde/vous-avez-un-capital-placer-que-faire" target="_blank" rel="noopener noreferrer">Épargne de précaution et investissement · AMF</a></small>
+<small><a href="https://www.amf-france.org/fr/espace-epargnants/actualites-mises-en-garde/vous-avez-un-capital-placer-que-faire" target="_blank" rel="noopener noreferrer">Épargne de précaution et investissement · AMF</a></small></div>
 </section>
 </div>
 </div>
-<footer>Les saisies sont enregistrées dans ce navigateur. Le site ne les transmet à aucun serveur.</footer>
+<footer>Les saisies sont enregistrées dans ce navigateur, pour le mois sélectionné.</footer>
 </main>
 <script>
+
 'use strict';
 
 const categories = {
-  fixed: {label: 'Charges fixes', color: '#82c7aa'},
-  essentials: {label: 'Vie courante', color: '#dafa83'},
-  leisure: {label: 'Loisirs et extras', color: '#aabcf6'},
-  unexpected: {label: 'Imprévus', color: '#ffb08f'}
+  fixed: {label: 'Charges fixes', color: '#ff4957'},
+  essentials: {label: 'Vie courante', color: '#f79fae'},
+  leisure: {label: 'Loisirs et extras', color: '#c6a5f1'},
+  unexpected: {label: 'Imprévus', color: '#ffc783'}
 };
 const defaults = {gross: null, net: null, ratio: 75, goal: 20, buffer: 100, reserve: null, target: null};
 const storageKey = 'budget-clair-v1';
@@ -116,7 +120,6 @@ try {
 const now = new Date();
 let month = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 let demoBudget = null;
-let editing = null;
 const current = () => demoBudget || (budgets[month] ??= {...defaults, expenses: []});
 
 function save() {
@@ -141,36 +144,153 @@ function line(label, amount) {
   return row;
 }
 
+const expenseViews = {
+  fixed: {
+    title: 'Charges fixes', description: 'Les montants qui reviennent chaque mois, comme le loyer, la box ou l’assurance.',
+    add: 'Ajouter une charge', placeholder: 'Loyer', categories: ['fixed'], empty: 'Aucune charge fixe saisie pour ce mois.'
+  },
+  daily: {
+    title: 'Dépenses du quotidien', description: 'Les achats qui varient au fil du mois, comme les courses, l’essence et les sorties.',
+    add: 'Ajouter une dépense', placeholder: 'Courses', categories: ['essentials', 'leisure'], empty: 'Aucune dépense du quotidien saisie pour ce mois.'
+  },
+  'unexpected-view': {
+    title: 'Imprévus', description: 'Les dépenses exceptionnelles, comme une réparation ou une facture surprise.',
+    add: 'Ajouter un imprévu', placeholder: 'Réparation voiture', categories: ['unexpected'], empty: 'Aucun imprévu saisi pour ce mois.'
+  }
+};
+let openView = 'overview';
+let editing = null;
+const forms = {};
+
+function showView(view, focus = true) {
+  openView = view;
+  for (const button of document.querySelectorAll('[data-view]')) {
+    const active = button.dataset.view === view;
+    $(button.dataset.view).hidden = !active;
+    if (active) button.setAttribute('aria-current', 'page');
+    else button.removeAttribute('aria-current');
+  }
+  if (focus) $(view).querySelector('h2').focus();
+}
+
+function resetExpenseForm() {
+  editing = null;
+  for (const {form, label, submit, settings, toggle} of Object.values(forms)) {
+    form.reset();
+    form.hidden = true;
+    label.setCustomValidity('');
+    submit.textContent = settings.add;
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+}
+
+function openExpenseForm(view, index = null) {
+  resetExpenseForm();
+  showView(view, false);
+  const {form, label, category, amount, submit, toggle} = forms[view];
+  form.hidden = false;
+  toggle.setAttribute('aria-expanded', 'true');
+  if (index !== null) {
+    editing = index;
+    const expense = current().expenses[index];
+    label.value = expense.label;
+    category.value = expense.category;
+    amount.value = expense.amount / 100;
+    submit.textContent = 'Enregistrer la modification';
+  }
+  label.focus();
+}
+
+for (const [view, settings] of Object.entries(expenseViews)) {
+  const section = $(view);
+  section.innerHTML = `
+    <div class="section-top">
+      <div><h2 tabindex="-1">${settings.title}</h2><p>${settings.description}</p></div>
+      <button type="button" class="primary" aria-expanded="false" aria-controls="${view}-form">${settings.add}</button>
+    </div>
+    <form class="expense-form" id="${view}-form" hidden>
+      <label>Libellé<input name="label" required maxlength="65" placeholder="${settings.placeholder}"></label>
+      <label>${view === 'daily' ? 'Catégorie' : 'Type'}<select name="category"></select></label>
+      <label>Montant (€)<input name="amount" type="number" min=".01" max="1000000" step=".01" inputmode="decimal" required></label>
+      <div class="form-actions"><button class="primary" type="submit">${settings.add}</button><button type="button">Annuler</button></div>
+    </form>
+    <div class="expense-list"></div>`;
+  const form = section.querySelector('form');
+  const toggle = section.querySelector('.section-top button');
+  const {label, category, amount} = form.elements;
+  const submit = form.querySelector('[type=submit]');
+  const cancel = form.querySelector('[type=button]');
+  const list = section.querySelector('.expense-list');
+  forms[view] = {settings, form, label, category, amount, submit, toggle, list};
+  for (const key of settings.categories) category.add(new Option(categories[key].label, key));
+  category.closest('label').hidden = settings.categories.length === 1;
+  toggle.onclick = () => openExpenseForm(view);
+  cancel.onclick = () => {
+    resetExpenseForm();
+    toggle.focus();
+  };
+  label.oninput = () => label.setCustomValidity('');
+  form.onsubmit = event => {
+    event.preventDefault();
+    const name = label.value.trim();
+    if (!name) {
+      label.setCustomValidity('Saisis un libellé.');
+      label.reportValidity();
+      return;
+    }
+    const entry = {label: name, category: category.value, amount: toCents(amount.valueAsNumber)};
+    if (editing === null) current().expenses.push(entry);
+    else current().expenses[editing] = entry;
+    resetExpenseForm();
+    save();
+    render();
+    toggle.focus();
+  };
+}
+
+for (const button of document.querySelectorAll('[data-view]')) {
+  button.onclick = () => {
+    if (button.dataset.view !== openView) resetExpenseForm();
+    showView(button.dataset.view);
+  };
+}
+for (const button of document.querySelectorAll('[data-add]')) {
+  button.onclick = () => openExpenseForm(button.dataset.add);
+}
+
 function renderExpenses() {
-  const container = $('expenses');
-  container.replaceChildren();
-  if (!current().expenses.length) container.append(element('p', 'Aucune dépense saisie.', 'empty'));
-  current().expenses.forEach((expense, index) => {
-    const row = line(expense.label + ' · ' + categories[expense.category].label, expense.amount);
-    const edit = element('button', 'Modifier', 'remove');
-    edit.type = 'button';
-    edit.setAttribute('aria-label', 'Modifier ' + expense.label);
-    edit.onclick = () => {
-      editing = index;
-      $('label').value = expense.label;
-      $('category').value = expense.category;
-      $('amount').value = expense.amount / 100;
-      $('add-expense').textContent = 'Enregistrer';
-      $('cancel-edit').hidden = false;
-      $('label').focus();
-    };
-    const remove = element('button', '×', 'remove');
-    remove.type = 'button';
-    remove.setAttribute('aria-label', 'Supprimer ' + expense.label);
-    remove.onclick = () => {
-      current().expenses.splice(index, 1);
-      resetExpenseForm();
-      save();
-      render();
-    };
-    row.append(edit, remove);
-    container.append(row);
-  });
+  for (const [view, {settings, list, toggle}] of Object.entries(forms)) {
+    list.replaceChildren();
+    let total = 0;
+    const entries = current().expenses.entries();
+    for (const [index, expense] of entries) {
+      if (!settings.categories.includes(expense.category)) continue;
+      total += expense.amount;
+      const label = view === 'daily' ? expense.label + ' · ' + categories[expense.category].label : expense.label;
+      const row = line(label, expense.amount);
+      row.classList.add('expense-entry');
+      const edit = element('button', 'Modifier', 'remove');
+      edit.type = 'button';
+      edit.setAttribute('aria-label', 'Modifier ' + expense.label);
+      edit.onclick = () => openExpenseForm(view, index);
+      const remove = element('button', 'Supprimer', 'remove');
+      remove.type = 'button';
+      remove.setAttribute('aria-label', 'Supprimer ' + expense.label);
+      remove.onclick = () => {
+        current().expenses.splice(index, 1);
+        resetExpenseForm();
+        save();
+        render();
+        toggle.focus();
+      };
+      const actions = element('div', '', 'entry-actions');
+      actions.append(edit, remove);
+      row.append(actions);
+      list.append(row);
+    }
+    if (list.childElementCount) list.prepend(line('Total du mois', total));
+    else list.append(element('p', settings.empty, 'empty'));
+  }
 }
 
 function renderChart(totals, spent) {
@@ -241,21 +361,13 @@ function render() {
   const data = calculate(budget);
   $('income').textContent = money(data.income);
   $('income-source').textContent = data.estimated ? 'Estimation à partir du brut' : budget.net === null ? 'À renseigner' : 'Net reçu renseigné';
-  $('spent').textContent = money(data.spent);
-  $('unexpected').textContent = money(data.totals.unexpected);
+  $('fixed-total').textContent = money(data.totals.fixed);
+  $('daily-total').textContent = money(data.totals.essentials + data.totals.leisure);
   $('left').textContent = money(data.left);
   $('left').classList.toggle('negative', data.left < 0);
   renderChart(data.totals, data.spent);
   renderSavings(budget, data);
   renderExpenses();
-}
-
-function resetExpenseForm() {
-  editing = null;
-  $('expense-form').reset();
-  $('label').setCustomValidity('');
-  $('add-expense').textContent = 'Ajouter la dépense';
-  $('cancel-edit').hidden = true;
 }
 
 function loadInputs() {
@@ -264,7 +376,6 @@ function loadInputs() {
   render();
 }
 
-for (const [key, {label}] of Object.entries(categories)) $('category').add(new Option(label, key));
 for (const key of Object.keys(defaults)) {
   $(key).addEventListener('input', event => {
     const field = event.target;
@@ -290,25 +401,6 @@ $('month').onchange = () => {
   month = $('month').value;
   loadInputs();
 };
-$('cancel-edit').onclick = resetExpenseForm;
-$('expense-form').onsubmit = event => {
-  event.preventDefault();
-  const field = $('label');
-  const label = field.value.trim();
-  if (!label) {
-    field.setCustomValidity('Saisissez un libellé.');
-    field.reportValidity();
-    return;
-  }
-  const entry = {label, category: $('category').value, amount: toCents($('amount').valueAsNumber)};
-  if (editing === null) current().expenses.push(entry);
-  else current().expenses[editing] = entry;
-  resetExpenseForm();
-  save();
-  render();
-  field.focus();
-};
-$('label').oninput = () => $('label').setCustomValidity('');
 $('demo').onclick = () => {
   demoBudget = demoBudget ? null : {
     ...defaults, gross: 2600, net: 2000, reserve: 2800, target: 3000,
@@ -322,6 +414,7 @@ $('demo').onclick = () => {
   $('demo').textContent = demoBudget ? 'Revenir à mon budget' : 'Voir un exemple';
   $('demo-note').hidden = !demoBudget;
   $('month').disabled = Boolean(demoBudget);
+  showView('overview', false);
   loadInputs();
 };
 loadInputs();
