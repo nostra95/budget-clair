@@ -62,7 +62,7 @@ test('un état valide traverse cleanState sans changer', () => {
   p.projects.push({id: 'p1', name: 'Voyage', target: 100000, deadline: '2027-06'});
   p.deposits.push({id: 'd', date: '2026-11-02', pot: 'p1', amount: 5000});
   p.expenses.push({id: 'e', date: '2026-11-02', undated: false, category: 'cafe', label: 'Café', amount: 300});
-  const state = {version: 2, active: p.id, theme: 'dark', profiles: [p]};
+  const state = {version: 2, active: p.id, theme: 'light', skin: 1, profiles: [p]};
   assert.deepEqual(core.cleanState(JSON.parse(JSON.stringify(state))), state);
 });
 test('reprise des données de la version 1', () => {
@@ -84,7 +84,7 @@ test('reprise des données de la version 1', () => {
 });
 test('plafonds en euros selon le salaire', () => {
   const d = core.compute(profile(), '2026-11', TODAY);
-  assert.deepEqual(core.ENVELOPES.map(e => d.envelopes[e.key].budget), [100000, 30000, 20000, 10000, 20000, 20000]);
+  assert.deepEqual(core.ENVELOPES.map(e => d.envelopes[e.key].budget), [100000, 30000, 20000, 10000, 20000, 10000, 10000]);
   assert.equal(d.tolerance, 20000);
   assert.deepEqual(d.subs.map(s => s.limit), [8000, 7000, 5000]);
   assert.deepEqual(d.subs.map(s => s.available), [8000, 7000, 5000]);
@@ -134,13 +134,62 @@ test('je peux l’acheter ?', () => {
   assert.equal(ask(80000, 'unexpected').safety, 100000);
   assert.equal(core.canBuy(core.createProfile('v'), core.compute(core.createProfile('v'), '2026-11', TODAY), 100, 'cafe').verdict, 'unknown');
 });
-test('adapter le plan garde toujours 100 %', () => {
-  for (let value = 0; value <= 100; value++) {
-    const plan = core.rebalance(core.defaultPlan(), 'fixed', value);
-    assert.equal(core.sum(Object.values(plan)), 100);
-    assert.equal(plan.fixed, value);
-    assert.ok(Object.values(plan).every(v => v >= 0));
+test('un plan sans investissement est gardé, pas remplacé', () => {
+  const old = {fixed: 60, essentials: 15, leisure: 5, unexpected: 5, safety: 10, projects: 5};
+  const p = core.cleanProfile({name: 'A', plan: old});
+  assert.deepEqual(p.plan, {...old, invest: 0});
+  assert.equal(core.cleanState({version: 2, theme: 'auto', profiles: []}).theme, 'dark');
+});
+test('khotta : toujours 100 %, couvre les charges, épargne quand c’est possible', () => {
+  for (let euros = 0; euros <= 2100; euros += 7) {
+    const p = profile();
+    if (euros) core.addCharge(p, '2026-01', {label: 'x', amount: euros * 100});
+    const d = core.compute(p, '2026-11', TODAY), k = core.recommend(p, d, TODAY);
+    assert.equal(core.sum(Object.values(k.plan)), 100, String(euros));
+    assert.ok(Object.values(k.plan).every(v => Number.isInteger(v) && v >= 0), JSON.stringify(k.plan));
+    if (euros <= 2000) assert.ok(k.amounts.fixed >= euros * 100);
+    if (euros && euros <= 1400) assert.ok(k.shares.saving >= 10 && k.plan.leisure >= 5, euros + JSON.stringify(k.plan));
+    p.plan = k.plan;
+    assert.equal(core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY).active, true);
   }
+});
+test('khotta : la réserve passe avant l’investissement', () => {
+  const p = profile();
+  core.addCharge(p, '2026-01', {label: 'Loyer', amount: 70000});
+  const get = balance => { p.safety.initial = balance; return core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY); };
+  const k = get(0);
+  assert.deepEqual(k.plan, {fixed: 35, essentials: 15, leisure: 20, unexpected: 5, safety: 20, projects: 5, invest: 0});
+  assert.equal(k.monthly, 100000);
+  assert.deepEqual([0, 100000, 300000, 600000].map(v => get(v).stage), [0, 1, 2, 3]);
+  assert.deepEqual([0, 100000, 300000, 600000].map(v => get(v).plan.invest), [0, 5, 13, 16]);
+  assert.equal(k.reached[0].month, '2027-01'); // 400 € par mois, 1000 € au 3e mois
+  assert.equal(get(300000).reached[1].done, true);
+  assert.equal(core.recommend(core.createProfile('v'), core.compute(core.createProfile('v'), '2026-11', TODAY), TODAY), null);
+});
+test('khotta : un versement déjà fait ce mois-ci n’est pas compté deux fois', () => {
+  const p = profile();
+  core.addCharge(p, '2026-01', {label: 'Loyer', amount: 70000});
+  p.deposits.push({id: 'd', date: '2026-11-02', pot: 'safety', amount: 40000});
+  assert.equal(core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY).reached[0].month, '2027-01');
+});
+test('investissement : enveloppe séparée des projets', () => {
+  const p = profile();
+  p.deposits.push({id: 'i', date: '2026-11-02', pot: 'invest', amount: 5000});
+  const d = core.compute(p, '2026-11', TODAY);
+  assert.equal(d.envelopes.invest.spent, 5000);
+  assert.equal(d.envelopes.projects.spent, 0);
+  assert.equal(d.tolerance, 20000);
+  assert.equal(core.project(10000, 10, 0), 1200000);
+  assert.ok(Math.abs(core.project(10000, 10, 0.05) - 1544000) < 10000);
+});
+test('trèfle', () => {
+  const p = profile();
+  const leaves = () => core.clover(p, core.compute(p, '2026-11', TODAY), TODAY).map(l => l.done);
+  assert.deepEqual(leaves(), [false, false, false, false, false]);
+  core.addCharge(p, '2026-01', {label: 'Loyer', amount: 70000});
+  p.safety.initial = 100000;
+  for (const m of ['08', '09', '10']) p.deposits.push({id: m, date: `2026-${m}-02`, pot: 'invest', amount: 5000});
+  assert.deepEqual(leaves(), [true, true, false, true, true]);
 });
 test('réserve et projets', () => {
   const p = profile();

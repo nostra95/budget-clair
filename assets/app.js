@@ -2,7 +2,7 @@
 'use strict';
 (() => {
 const core = window.BudgetCore;
-const {money, percent, ENVELOPES, ENVELOPE, CATEGORIES, CATEGORY, LEISURE} = core;
+const {money, percent, SAVING_KEYS, ENVELOPES, ENVELOPE, CATEGORIES, CATEGORY, LEISURE} = core;
 const KEY = 'budget-clair-v2', KEY_V1 = 'budget-clair-profiles-v1', KEY_V0 = 'budget-clair-v1';
 const $ = id => document.getElementById(id);
 const app = $('app'), dialog = $('dialog'), toastBox = $('toast'), tooltip = $('tooltip');
@@ -29,6 +29,8 @@ function h(tag, props, ...children) {
   return fill(node, children);
 }
 const ICONS = {
+  clover: 'M12 12C8 11.3 6.200 8.600 7.600 6.600 9 4.700 11.600 5.500 12 8c.4-2.500 3-3.300 4.400-1.400C17.800 8.600 16 11.300 12 12zM12 12c-.8 4-3.500 5.800-5.400 4.400C4.700 15 5.500 12.400 8 12M12 12c.8 4 3.500 5.800 5.400 4.400C19.300 15 18.500 12.400 16 12M12 12c.3 4-.5 7-2.500 9.500',
+  sprout: 'M12 21v-9M12 12C12 8 9 5.500 4.500 5.500 4.500 10 7.500 12 12 12zM12 14.500c0-3.500 2.800-6 7.500-6 0 4.300-3 6-7.500 6z',
   home: 'M3 11.5 12 4l9 7.5M5.5 10v10h13V10M10 20v-6h4v6', list: 'M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01',
   repeat: 'M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3', shield: 'M12 3 4.5 6v5.5c0 4.6 3.1 8 7.5 9.5 4.4-1.5 7.5-4.9 7.5-9.5V6L12 3zM9 12l2.2 2.2L15.2 10',
   chart: 'M4 20V10M10 20V4M16 20v-7M22 20H2', gear: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 4.5v5M9 14.5v5', plus: 'M12 5v14M5 12h14',
@@ -51,23 +53,45 @@ function icon(name) {
   svg.append(path);
   return svg;
 }
+const svgNode = (tag, attrs, ...children) => {
+  const node = document.createElementNS(SVG, tag);
+  for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+  node.append(...children);
+  return node;
+};
+const LEAF = 'M0 0C-5-5-10.500-13.500-6-18.500-3-21 0-19 0-16 0-19 3-21 6-18.500 10.500-13.500 5-5 0 0z';
 function star() {
-  const svg = document.createElementNS(SVG, 'svg');
-  svg.setAttribute('class', 'star');
-  svg.setAttribute('viewBox', '0 0 40 40');
-  svg.setAttribute('aria-hidden', 'true');
-  for (const turn of [0, 45]) {
-    const rect = document.createElementNS(SVG, 'rect');
-    for (const [key, value] of Object.entries({x: 7, y: 7, width: 26, height: 26, fill: 'currentColor', transform: `rotate(${turn} 20 20)`})) rect.setAttribute(key, value);
-    svg.append(rect);
-  }
-  const circle = document.createElementNS(SVG, 'circle');
-  for (const [key, value] of Object.entries({cx: 20, cy: 20, r: 7})) circle.setAttribute(key, value);
-  svg.append(circle);
-  return svg;
+  return svgNode('svg', {class: 'star', viewBox: '-22 -22 44 44', 'aria-hidden': 'true'},
+    ...[0, 72, 144, 216, 288].map(turn => svgNode('path', {d: LEAF, fill: 'currentColor', transform: `rotate(${turn})`})), svgNode('circle', {r: 2.6}));
 }
-const ENV_ICON = {fixed: 'repeat', essentials: 'cart', leisure: 'spark', unexpected: 'bolt', safety: 'shield', projects: 'flag'};
-const color = key => `var(--${key === 'safety' || key === 'projects' ? 'savings' : key})`;
+function cloverSvg(leaves) {
+  return svgNode('svg', {class: 'clover', viewBox: '-25 -25 50 50', role: 'img', 'aria-label': `${leaves.filter(item => item.done).length} feuilles sur 5`},
+    ...leaves.map((item, index) => svgNode('path', {class: 'leaf' + (item.done ? ' done' : '') + (index === 4 ? ' fifth' : ''), d: LEAF, transform: `rotate(${index * 72}) translate(0 -1.500)`})));
+}
+function magicRing() {
+  const ticks = Array.from({length: 40}, (_, i) => svgNode('path', {d: i % 5 ? 'M0 -88V-92' : 'M0 -84V-96', transform: `rotate(${i * 9})`}));
+  return svgNode('svg', {class: 'ring', viewBox: '-100 -100 200 200', fill: 'none', stroke: 'currentColor', 'stroke-width': 1.2, 'aria-hidden': 'true'},
+    svgNode('circle', {r: 97}), svgNode('circle', {r: 83}), svgNode('circle', {r: 56}), ...ticks,
+    ...[0, 36].map(turn => svgNode('path', {d: 'M0 -83L48.800 67.100 -78.900 -25.600H78.900L-48.800 67.100z', transform: `rotate(${turn})`, opacity: turn ? .35 : 1})));
+}
+/* Le compagnon du site : un petit trèfle à cinq feuilles. */
+function palSvg(mood) {
+  const eyes = mood === 'bad' ? [svgNode('path', {d: 'M-15 10l8 5-8 5M15 10l-8 5 8 5', stroke: '#f6eedf', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round'})] :
+    [-11, 11].map(x => svgNode('g', {}, svgNode('ellipse', {cx: x, cy: 14, rx: 6, ry: mood === 'warn' ? 8.5 : 7.5, fill: '#fff6e6'}), svgNode('circle', {cx: x + (mood === 'warn' ? 1 : 0), cy: 15, r: 3.6, fill: '#b5152c'}), svgNode('circle', {cx: x + 1.5, cy: 13, r: 1.3, fill: '#fff'})));
+  const brows = mood === 'good' ? 'M-18 3q6-6 12-2M18 3q-6-6-12-2' : mood === 'warn' ? 'M-18 4l10-4M18 4L8 0' : 'M-18 3l10 3M18 3L8 6';
+  const mouth = mood === 'good' ? svgNode('path', {d: 'M-9 25Q0 38 9 25z', fill: '#ff8d8d', stroke: '#f6eedf', 'stroke-width': 2, 'stroke-linejoin': 'round'}) :
+    svgNode('path', {d: mood === 'warn' ? 'M-6 29h12' : 'M-8 32Q0 23 8 32', stroke: '#f6eedf', 'stroke-width': 2.6, fill: 'none', 'stroke-linecap': 'round'});
+  return svgNode('svg', {viewBox: '-60 -62 120 120', 'aria-hidden': 'true'},
+    svgNode('ellipse', {cx: 0, cy: 54, rx: 26, ry: 4, fill: '#000', opacity: .4}),
+    svgNode('g', {class: 'leaves'}, ...[-72, 72, -36, 36, 0].map((turn, index) => svgNode('path', {d: LEAF, transform: `translate(0 -6) rotate(${turn}) scale(2.500)`, fill: index === 4 ? '#c81f38' : '#2a9d55', stroke: '#e9b949', 'stroke-width': .8}))),
+    svgNode('circle', {cx: 0, cy: 18, r: 32, fill: '#17131a', stroke: '#e9b949', 'stroke-width': 2.5}),
+    svgNode('path', {d: brows, stroke: '#e9b949', 'stroke-width': 3.4, 'stroke-linecap': 'round'}),
+    svgNode('g', {class: 'eyes'}, ...eyes), mouth,
+    ...(mood === 'good' ? [-20, 20].map(x => svgNode('ellipse', {cx: x, cy: 24, rx: 4.5, ry: 2.6, fill: '#d9566e', opacity: .7})) : []),
+    ...(mood === 'warn' ? [svgNode('path', {d: 'M29 -4q5 8 0 10-5-2 0-10z', fill: '#8fc7ff'})] : []));
+}
+const ENV_ICON = {fixed: 'repeat', essentials: 'cart', leisure: 'spark', unexpected: 'bolt', safety: 'shield', projects: 'flag', invest: 'sprout'};
+const color = key => `var(--${SAVING_KEYS.includes(key) ? 'savings' : key})`;
 const badge = (name, env) => h('span', {class: 'badge', style: {'--c': color(env)}}, icon(name));
 const brand = () => h('div', {class: 'brand'}, star(), h('span', null, 'Budget Clair'));
 const btn = (label, onclick, cls = '', ico) => h('button', {type: 'button', class: 'btn ' + cls, onclick}, ico && icon(ico), label);
@@ -193,8 +217,8 @@ function countUp(key, value) {
   return node;
 }
 
-const NAV = [['home', 'Accueil', 'home'], ['expenses', 'Dépenses', 'list'], ['charges', 'Charges fixes', 'repeat'], ['savings', 'Épargne', 'shield'], ['history', 'Historique', 'chart'], ['settings', 'Réglages', 'gear']];
-const VIEWS = {home: homeView, expenses: expensesView, charges: chargesView, savings: savingsView, history: historyView, settings: settingsView};
+const NAV = [['home', 'Accueil', 'home'], ['khotta', 'Ma khotta', 'clover'], ['expenses', 'Dépenses', 'list'], ['charges', 'Charges fixes', 'repeat'], ['savings', 'Épargne', 'shield'], ['history', 'Historique', 'chart'], ['settings', 'Réglages', 'gear']];
+const VIEWS = {home: homeView, khotta: khottaView, expenses: expensesView, charges: chargesView, savings: savingsView, history: historyView, settings: settingsView};
 
 function applyTheme() {
   if (state.theme === 'auto') delete document.documentElement.dataset.theme;
@@ -236,7 +260,7 @@ function render() {
       !demo && !storageOk && h('div', {class: 'banner', role: 'alert'}, 'L’enregistrement est bloqué dans ce navigateur. Exporte tes données avant de fermer la page.'),
       h('main', {id: 'main', tabIndex: -1}, content)),
     h('nav', {class: 'tabbar', 'aria-label': 'Sections principales'},
-      navButton(NAV[0]), navButton(NAV[1]), h('button', {type: 'button', class: 'add', 'aria-label': 'Ajouter une dépense', onclick: () => expenseDialog()}, icon('plus')), navButton(NAV[3]), navButton(NAV[4]))));
+      navButton(NAV[0]), navButton(NAV[1]), h('button', {type: 'button', class: 'add', 'aria-label': 'Ajouter une dépense', onclick: () => expenseDialog()}, icon('plus')), navButton(NAV[2]), navButton(NAV[4]))));
   freshId = null;
 }
 function transition(update) {
@@ -264,15 +288,17 @@ function commit(message, undo) {
   render();
   if (message) toast(message, undo);
   requestAnimationFrame(() => requestAnimationFrame(() => {
-    for (const item of app.querySelectorAll('.star')) item.style.rotate = '45deg';
+    for (const item of app.querySelectorAll('.star')) item.style.rotate = '72deg';
   }));
 }
 /* Pour annuler, on remet une copie du profil prise avant le changement. */
 function change(action, message) {
   if (stale) reload();
-  const p = profile(), before = structuredClone(p);
+  const p = profile(), before = structuredClone(p), leaves = leafCount(before);
   action(p);
-  commit(message, () => {
+  const won = leafCount(p) > leaves;
+  if (won) burst(34);
+  commit(won ? 'Nouvelle feuille à ton trèfle ! ' + (message ?? '') : message, () => {
     for (const key of Object.keys(p)) delete p[key];
     Object.assign(p, before);
     commit();
@@ -283,6 +309,32 @@ function toast(message, undo) {
   clearTimeout(toastTimer);
   toastBox.replaceChildren(h('div', {class: 'toast'}, message, undo && h('button', {type: 'button', onclick: () => { toastBox.replaceChildren(); undo(); }}, 'Annuler')));
   toastTimer = setTimeout(() => toastBox.replaceChildren(), undo ? 7000 : 5000);
+}
+
+/* ---------- Effets ---------- */
+const fx = $('fx');
+const leafCount = p => core.clover(p, core.compute(p, now().slice(0, 7), now()), now()).filter(item => item.done).length;
+function play(node, frames, options) {
+  if (reduced.matches) return;
+  fx.append(node);
+  node.animate(frames, {fill: 'both', ...options}).finished.catch(() => {}).finally(() => node.remove());
+}
+function burst(count = 16) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2, far = 140 + Math.random() * 260, x = innerWidth / 2 + Math.cos(angle) * far, y = innerHeight * .6 + Math.sin(angle) * far * .8 - 130;
+    const bit = svgNode('svg', {class: 'bit', viewBox: '-22 -22 44 44'}, ...[0, 72, 144, 216, 288].map(turn => svgNode('path', {d: LEAF, fill: ['#e9b949', '#2a9d55', '#c81f38'][i % 3], transform: `rotate(${turn})`})));
+    play(bit, [{transform: `translate(${innerWidth / 2}px, ${innerHeight * .6}px) scale(.2)`, opacity: 1}, {transform: `translate(${x}px, ${y}px) scale(1) rotate(${far}deg)`, opacity: 1, offset: .55}, {transform: `translate(${x}px, ${y + 190}px) scale(.8) rotate(${far * 2}deg)`, opacity: 0}], {duration: 1300 + Math.random() * 600, easing: 'cubic-bezier(.1,.7,.3,1)'});
+  }
+}
+function slash() {
+  play(h('div', {class: 'slash'}), [{transform: 'translateX(-70%) scaleY(.4)', opacity: 0}, {transform: 'none', opacity: 1, offset: .4}, {transform: 'translateX(55%) scaleY(.2)', opacity: 0}], {duration: 520, easing: 'ease-out'});
+}
+function openBook() {
+  const ease = {duration: 1050, delay: 260, easing: 'cubic-bezier(.7,0,.25,1)'};
+  play(h('div', {class: 'cover l'}), [{transform: 'none'}, {transform: 'rotateY(-105deg)'}], ease);
+  play(h('div', {class: 'cover r'}), [{transform: 'none'}, {transform: 'rotateY(105deg)'}], ease);
+  const seal = svgNode('svg', {class: 'seal', viewBox: '-24 -24 48 48'}, svgNode('circle', {r: 23, fill: '#17131a', stroke: '#e9b949'}), ...[0, 72, 144, 216, 288].map((turn, i) => svgNode('path', {d: LEAF, fill: i === 4 ? '#c81f38' : '#e9b949', transform: `rotate(${turn})`})));
+  play(seal, [{transform: 'scale(1)', opacity: 1}, {transform: 'scale(1.2) rotate(36deg)', opacity: 1, offset: .3}, {transform: 'scale(2.400) rotate(90deg)', opacity: 0}], {duration: 900});
 }
 
 /* ---------- Infobulles ---------- */
@@ -310,21 +362,41 @@ function homeView() {
     ENVELOPES.map(item => h('div', {class: 'row compact'}, badge(ENV_ICON[item.key], item.key), h('div', null, h('div', {class: 'label'}, item.label), h('div', {class: 'soft small'}, item.hint)), h('strong', {class: 'tab'}, percent(p.plan[item.key]))))));
   const previous = core.compute(p, core.addMonths(month, -1), now());
   const recent = data.expenses.filter(item => !item.charge).sort((a, b) => a.date < b.date ? 1 : -1).slice(0, 5);
+  const tips = core.advise(p, data, previous), k = core.recommend(p, data, now());
+  if (k && !k.active && k.hasCharges && data.phase !== 'past') tips.unshift({level: 'info', title: 'Ta khotta est prête', text: `Elle répartit ${money(data.income)} selon tes vraies charges, avec ${money(k.amounts.safety)} en sécurité et ${money(k.amounts.invest + k.amounts.projects)} pour tes projets et l’investissement.`, action: 'khotta'});
   return h('div', null,
-    hero(data),
+    hero(data, tips),
     data.phase !== 'past' && h('section', {class: 'tiles', 'aria-label': 'Tolérance par type de plaisir'}, data.subs.map(sub => subTile(sub, data))),
     h('div', {class: 'cols'},
       h('div', null, salaryCard(data),
         h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Dernières dépenses'), recent.length > 0 && h('button', {type: 'button', class: 'link small', onclick: () => go('expenses')}, 'Tout voir')),
           recent.length ? recent.map(item => expenseRow(item, true)) : h('p', {class: 'soft'}, 'Aucune dépense ce mois-ci.'))),
       h('div', null,
-        h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Conseils')), tipsList(core.advise(p, data, previous))),
+        h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Conseils')), tipsList(tips)),
+        cloverCard(data),
         safetyMini(data))));
 }
+let palLine = 0;
+function companion(mood, lines) {
+  const bubble = h('div', {class: 'bubble', 'aria-live': 'polite'}, lines[(palLine + Number(now().slice(8))) % lines.length]);
+  const pal = h('button', {type: 'button', class: 'pal', 'aria-label': 'Ton compagnon trèfle : un autre message', onclick: () => {
+    palLine++;
+    const next = h('div', {class: 'bubble', 'aria-live': 'polite'}, lines[(palLine + Number(now().slice(8))) % lines.length]);
+    scene.querySelector('.bubble').replaceWith(next);
+    pal.classList.remove('jump');
+    void pal.offsetWidth;
+    pal.classList.add('jump');
+  }, onanimationend: event => { if (event.animationName === 'jump') pal.classList.remove('jump'); }}, palSvg(mood));
+  const scene = h('div', {class: 'scene ' + mood}, magicRing(), bubble, pal);
+  return scene;
+}
+const embers = () => h('div', {class: 'embers', 'aria-hidden': 'true'}, Array.from({length: 16}, (_, i) => h('i', {style: {'--x': (i * 37 + 11) % 100 + '%', '--s': 2 + i % 3 + 'px', '--t': 5 + i % 5 + 's', '--d': -(i * 1.3) + 's', '--dx': (i % 2 ? 40 : -30) + 'px'}})));
+const heroShell = (cls, body, mood, lines) => h('section', {class: 'hero ' + cls}, embers(), h('div', null, body), companion(mood, lines));
+
 function salaryHero() {
   const input = moneyInput({name: 'net', placeholder: '2 000', 'aria-label': 'Salaire net en euros', autocomplete: 'off'});
   const error = h('p', {class: 'error', role: 'alert', hidden: true});
-  return h('section', {class: 'hero'}, h('div', null, h('h1', null, 'Quel est ton salaire net ?'),
+  return heroShell('', [h('h1', null, 'Quel est ton salaire net ?'),
     h('p', {class: 'explain'}, 'Le montant qui arrive sur ton compte. Tes plafonds et ta tolérance sont calculés à partir de lui, et il est repris chaque mois.'),
     h('form', {noValidate: true, onsubmit: event => {
       event.preventDefault();
@@ -338,31 +410,36 @@ function salaryHero() {
       profile().salaries[month] = {net, gross: null, ratio: 75};
       wasGate = true;
       commit('Salaire enregistré. Ajoute maintenant tes charges fixes.');
-    }}, wrapMoney(input), h('button', {type: 'submit', class: 'btn accent'}, 'Calculer mon plan'), error),
-    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))));
+    }}, wrapMoney(input), h('button', {type: 'submit', class: 'btn accent'}, 'Calculer'), error),
+    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff6e6'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))], 'good', ['Ouvre ton grimoire : on commence par ton salaire.']);
 }
-function hero(data) {
+function hero(data, tips) {
   const actions = h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'accent', 'plus'), btn('Je peux l’acheter ?', () => buyDialog(), 'ghost', 'bag'));
   if (data.phase === 'past') {
-    return h('section', {class: 'hero' + (data.cash < 0 ? ' neg' : '')}, h('div', null,
-      h('p', {class: 'lead'}, data.cash < 0 ? `En ${monthName(month)}, tu as dépassé de` : `En ${monthName(month)}, il t’est resté`),
+    const lost = data.cash < 0;
+    return heroShell(lost ? 'neg' : '', [
+      h('p', {class: 'lead'}, lost ? `En ${monthName(month)}, tu as dépassé de` : `En ${monthName(month)}, il t’est resté`),
       h('div', {class: 'num'}, countUp('hero', Math.abs(data.cash))),
-      h('p', {class: 'explain'}, `Sur ${money(data.income)} de rentrées : `, h('b', null, money(data.spent)), ' dépensés et ', h('b', null, money(data.saved)), ' mis de côté.')),
-      h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'ghost', 'plus')));
+      h('p', {class: 'explain'}, `Sur ${money(data.income)} de rentrées : `, h('b', null, money(data.spent)), ' dépensés et ', h('b', null, money(data.saved)), ' mis de côté.'),
+      h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'ghost', 'plus'))], lost ? 'warn' : 'good', [lost ? 'Cette page est tournée. On fait mieux sur la suivante.' : 'Une page bien remplie !']);
   }
   const value = data.tolerance, budget = data.envelopes.leisure.budget;
   const until = `${data.days} ${monthName(month).split(' ')[0]}`;
   if (value <= 0) {
-    return h('section', {class: 'hero neg'}, h('div', null,
+    return heroShell('neg', [
       h('p', {class: 'lead'}, value === 0 ? 'Pour te faire plaisir, il te reste' : 'Ta tolérance plaisir est dépassée de'),
       h('div', {class: 'num'}, countUp('hero', -value)),
-      h('p', {class: 'explain'}, value === 0 ? `Plus de café ni d’achat en ligne avant le mois prochain.` : `Pause sur les cafés et les achats en ligne jusqu’au ${until}. Ce dépassement mord sur l’argent prévu pour tes autres enveloppes.`)), actions);
+      h('p', {class: 'explain'}, value === 0 ? 'Plus de café ni d’achat en ligne avant le mois prochain.' : `Pause sur les cafés et les achats en ligne jusqu’au ${until}. Ce dépassement mord sur l’argent prévu pour tes autres enveloppes.`), actions],
+    'bad', ['Aïe ! On range la carte jusqu’au mois prochain.', 'Une mauvaise page ne fait pas un mauvais livre.', 'Vérifie « Je peux l’acheter ? » avant chaque achat.']);
   }
-  return h('section', {class: 'hero' + (value < budget * 0.2 ? ' low' : '')}, h('div', null,
+  const worried = value < budget * 0.2 || tips.some(tip => tip.level === 'critical' || tip.level === 'warn');
+  const good = ['On ne lâche rien !', 'Chaque euro a sa mission.', 'Tu gères, continue comme ça.', data.daysLeft > 7 ? `${money(Math.floor(data.weekly / 100) * 100)} cette semaine, pas plus.` : 'Dernière ligne droite du mois !', 'Le jour du salaire, épargne d’abord.'];
+  const warn = ['Doucement, je surveille !', `Encore ${plural(data.daysLeft, 'jour')} à tenir.`, 'Regarde mes conseils plus bas.'];
+  return heroShell(value < budget * 0.2 ? 'low' : '', [
     h('p', {class: 'lead'}, data.phase === 'future' ? `En ${monthName(month)}, tu pourras te faire plaisir avec` : 'Tu peux encore te faire plaisir avec'),
     h('div', {class: 'num'}, countUp('hero', value)),
     h('p', {class: 'explain'}, data.phase === 'current' && data.daysLeft > 7 ? ['Soit ', h('b', null, money(Math.floor(data.weekly / 100) * 100) + ' par semaine'), ` jusqu’au ${until}. `] : data.phase === 'current' ? [`Pour tenir jusqu’au ${until}. `] : null,
-      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.')), actions);
+      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.'), actions], worried ? 'warn' : 'good', worried ? warn : good);
 }
 function subTile(sub, data) {
   const over = sub.left < 0, weekly = data.daysLeft > 7 ? Math.floor(sub.available * 7 / data.daysLeft / 100) * 100 : 0;
@@ -386,11 +463,11 @@ function salaryCard(data) {
       bar.style.width = (last.get('bar-' + item.key) ?? 0) + '%';
       last.set('bar-' + item.key, target);
       requestAnimationFrame(() => requestAnimationFrame(() => { bar.style.width = target + '%'; }));
-      return withTip(h('button', {type: 'button', class: e.left < 0 && item.key !== 'safety' && item.key !== 'projects' ? 'over' : '', style: {flex: `${e.plan} 1 0`, '--c': color(item.key)}, 'aria-label': `${item.label} : ${money(e.spent)} sur ${money(e.budget)}`}, bar),
+      return withTip(h('button', {type: 'button', class: e.left < 0 && !SAVING_KEYS.includes(item.key) ? 'over' : '', style: {flex: `${e.plan} 1 0`, '--c': color(item.key)}, 'aria-label': `${item.label} : ${money(e.spent)} sur ${money(e.budget)}`}, bar),
         () => [h('b', null, item.label), h('div', null, h('strong', null, money(e.spent)), 'utilisés'), h('div', null, h('strong', null, money(e.budget)), `prévus (${percent(e.plan)})`)]);
     })),
     ENVELOPES.map(item => {
-      const e = env(item.key), saving = item.key === 'safety' || item.key === 'projects';
+      const e = env(item.key), saving = SAVING_KEYS.includes(item.key);
       const over = !saving && e.left < 0, near = !saving && !over && e.used >= 80 && item.key !== 'fixed' && data.phase === 'current';
       const status = saving ? (e.left <= 0 ? 'Objectif atteint' : `Encore ${money(e.left)} à verser`) : over ? `Dépassé de ${money(-e.left)}` : `Reste ${money(e.left)}`;
       return h('div', {class: 'env' + (over ? ' over' : near ? ' near' : ''), style: {'--c': color(item.key)}},
@@ -407,21 +484,73 @@ function salaryCard(data) {
 const TIP_ICON = {critical: 'alert', warn: 'alert', info: 'info', good: 'check'};
 function tipsList(tips) {
   const actions = {
-    salary: ['Saisir mon salaire', () => salaryDialog()], charges: ['Ajouter mes charges', () => go('charges')], plan: ['Voir mon plan', () => go('settings')],
-    adapt: ['Adapter mon plan', adaptPlan], deposit: ['Verser maintenant', () => depositDialog()]
+    salary: ['Saisir mon salaire', () => salaryDialog()], charges: ['Ajouter mes charges', () => go('charges')], khotta: ['Voir ma khotta', () => go('khotta')], deposit: ['Verser maintenant', () => depositDialog()]
   };
   return h('ul', {class: 'tips'}, tips.map(tip => h('li', {class: 'tip ' + tip.level}, icon(TIP_ICON[tip.level]), h('strong', null, tip.title), h('p', null, tip.text),
     tip.action && h('button', {type: 'button', class: 'link', onclick: actions[tip.action][1]}, actions[tip.action][0]))));
 }
-function adaptPlan() {
-  const data = compute(), p = profile();
-  const next = core.rebalance(p.plan, 'fixed', Math.min(100, Math.ceil(data.envelopes.fixed.share)));
-  openDialog('Adapter mon plan', close => [
-    h('p', {class: 'soft'}, 'La part des charges fixes suit tes vrais montants. Le reste garde les mêmes proportions.'),
-    h('div', null, ENVELOPES.map(item => h('div', {class: 'row compact'}, badge(ENV_ICON[item.key], item.key), h('div', null, h('div', {class: 'label'}, item.label), h('div', {class: 'soft small tab'}, `${percent(p.plan[item.key])} aujourd’hui`)),
-      h('div', {class: 'amount'}, `${percent(next[item.key])}, ${money(Math.round(data.income * next[item.key] / 100))}`)))),
-    foot(close, 'Utiliser ce plan', () => { close(); change(q => { q.plan = next; }, 'Plan adapté.'); })
-  ]);
+function cloverCard(data) {
+  const leaves = core.clover(profile(), data, now());
+  return h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Ton trèfle'), h('span', {class: 'soft small'}, `${leaves.filter(item => item.done).length} feuilles sur 5`)),
+    h('div', {class: 'clover-card'}, cloverSvg(leaves), h('ul', {class: 'leaf-list'}, leaves.map(item => h('li', {class: item.done ? 'done' : ''}, icon(item.done ? 'check' : 'clover'), h('span', null, item.title, !item.done && h('span', {class: 'small'}, ` · ${item.hint}`)))))));
+}
+/* ---------- Khotta ---------- */
+const outLink = (href, label) => h('a', {href, target: '_blank', rel: 'noopener noreferrer'}, label);
+function khottaView() {
+  const p = profile(), data = compute(), k = core.recommend(p, data, now());
+  if (!k) return h('div', null, salaryHero());
+  const days = data.days, week = amount => money(Math.round(amount * 7 / days / 100) * 100);
+  const stageSafety = [`Objectif : ${money(k.monthly)}, un mois de dépenses.`, `Objectif : ${money(k.monthly * 3)}, trois mois de dépenses.`, `Objectif : ${money(k.monthly * 6)}, six mois de dépenses.`, 'Réserve complète, plus rien à verser.'][k.stage];
+  const why = {
+    fixed: k.hasCharges ? `Tes charges réelles : ${money(data.envelopes.fixed.spent)}.` : 'Estimation, en attendant tes charges.',
+    essentials: `${week(k.amounts.essentials)} par semaine. ${k.usual === null ? 'Courses, transport, santé.' : 'D’après tes derniers mois.'}`,
+    leisure: `${week(k.amounts.leisure)} par semaine, sans culpabiliser.`, unexpected: 'On n’y touche que pour une vraie surprise.',
+    safety: stageSafety, projects: 'Voyage, voiture, apport.',
+    invest: k.plan.invest ? 'Pour le long terme, au moins 5 à 8 ans.' : 'Après ton premier mois de réserve.'
+  };
+  const steps = core.STAGES.map((stage, index) => {
+    const reach = k.reached[index], done = index < k.stage, now_ = index === k.stage;
+    return h('li', {class: 'step' + (done ? ' done' : now_ ? ' now' : ''), 'aria-current': now_ ? 'step' : null}, h('span', {class: 'dot'}, done ? icon('check') : index + 1), h('b', null, stage.title), h('span', {class: 'soft small'}, stage.goal),
+      reach && !done && h('span', {class: 'small tab'}, reach.month ? `${money(reach.target)}, vers ${monthName(reach.month)}` : money(reach.target)));
+  });
+  const pay = [
+    ...SAVING_KEYS.filter(key => k.amounts[key] > 0).map(key => [{safety: 'Vire vers ta réserve de sécurité', projects: 'Vire vers tes projets', invest: 'Vire vers ton investissement'}[key], money(k.amounts[key])]),
+    ['Garde pour tes charges fixes', money(k.amounts.fixed)], ['Garde pour les imprévus', money(k.amounts.unexpected)],
+    ['Quotidien, par semaine', week(k.amounts.essentials)], ['Plaisir, par semaine', week(k.amounts.leisure)]
+  ];
+  const bench = (label, value, low, high, text, link) => h('div', {class: 'bench'}, h('div', {class: 'between'}, h('b', null, label), h('span', {class: 'tab'}, `${percent(value)} dans ta khotta`)),
+    h('div', {class: 'track', 'aria-hidden': 'true'}, h('span', {class: 'zone', style: {left: low + '%', width: high - low + '%'}}), h('span', {class: 'mark', style: {left: Math.max(1, Math.min(99, value)) + '%'}})), h('p', {class: 'soft small'}, text, ' ', link));
+  const simAmount = k.amounts.invest || k.investLater;
+  return h('div', null,
+    h('div', {class: 'head'}, h('div', null, h('h1', null, 'Ma khotta'), h('p', null, `Calculée sur ${money(data.income)} de rentrées${k.hasCharges ? ` et ${money(data.envelopes.fixed.spent)} de charges` : ''}. Elle suit ton salaire, tes charges et ta réserve.`)),
+      k.active ? h('span', {class: 'tip good'}, icon('check'), h('strong', null, 'Khotta active')) : btn('Utiliser cette khotta', () => { const plan = k.plan; change(q => { q.plan = {...plan}; }, 'Khotta activée, tes plafonds sont à jour.'); slash(); }, 'primary', 'clover')),
+    (!k.hasCharges || k.tight || k.high || k.cut > 0) && h('ul', {class: 'tips'},
+      !k.hasCharges && h('li', {class: 'tip warn'}, icon('alert'), h('strong', null, 'Tes charges manquent'), h('p', null, 'Le calcul suppose 35 % de charges. Saisis les tiennes pour une khotta exacte.'), h('button', {type: 'button', class: 'link', onclick: () => go('charges')}, 'Ajouter mes charges')),
+      k.tight ? h('li', {class: 'tip critical'}, icon('alert'), h('strong', null, 'Budget très serré'), h('p', null, `Tes charges prennent ${percent(k.fixedShare)} du revenu. Il faut les baisser ou augmenter tes rentrées avant d’investir.${k.cut ? ` Pour revenir à 50 %, il manque ${money(k.cut)} par mois.` : ''}`)) :
+        k.cut > 0 && h('li', {class: 'tip warn'}, icon('alert'), h('strong', null, `Charges à ${percent(k.fixedShare)}`), h('p', null, `${k.high ? 'C’est au-dessus du repère de 60 %.' : 'C’est dans la limite haute, entre 50 et 60 %.'} Baisser de ${money(k.cut)} par mois te ramènerait à 50 %.`))),
+    h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, `Étape ${k.stage + 1} sur 4`), h('span', {class: 'soft small'}, `Ta réserve couvre ${new Intl.NumberFormat('fr-FR', {maximumFractionDigits: 1}).format(k.covered)} mois`)), h('ol', {class: 'steps', style: {padding: '0', margin: '0', 'list-style': 'none'}}, steps)),
+    h('div', {class: 'cols'}, h('div', null,
+      h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Où mettre chaque euro')), ENVELOPES.map(item => h('div', {class: 'khotta-row', style: {'--c': color(item.key)}}, badge(ENV_ICON[item.key], item.key),
+        h('div', null, h('div', {class: 'label', style: {'font-weight': '700'}}, item.label), h('div', {class: 'soft small why'}, why[item.key])), h('div', {class: 'pct tab'}, percent(k.plan[item.key])),
+        h('div', {class: 'eur tab'}, money(k.amounts[item.key]), k.plan[item.key] !== p.plan[item.key] && h('span', {class: 'was'}, `avant ${percent(p.plan[item.key])}`)), meter('k-' + item.key, k.plan[item.key]))),
+        h('p', {class: 'soft small', style: {'margin-top': '14px'}}, 'Tu peux ajuster chaque part dans Réglages.')),
+      h('section', {class: 'card stack-sm'}, h('h2', null, 'Investir, sans se brûler'),
+        h('p', null, k.amounts.invest ? `Ce mois-ci : ${money(k.amounts.invest)}. Une fois la réserve complète : ${money(k.investLater)} par mois.` : `Rien tant que ta réserve n’atteint pas un mois. Une fois complète : ${money(k.investLater)} par mois.`),
+        simAmount > 0 && h('dl', {class: 'sim'}, h('div', null, h('dt', null, `${money(simAmount)} par mois`), h('dd', null, '10 ans')), h('div', null, h('dt', null, 'Sans rendement'), h('dd', {class: 'tab'}, money(Math.round(core.project(simAmount, 10, 0) / 100) * 100))), h('div', null, h('dt', null, 'À 5 % par an'), h('dd', {class: 'tab'}, money(Math.round(core.project(simAmount, 10, 0.05) / 100) * 100)))),
+        h('p', {class: 'soft small'}, 'Le 5 % est un exemple : rien n’est garanti, et une somme placée peut baisser.'),
+        h('ul', {class: 'plain'}, ['Rembourse d’abord un découvert ou un crédit à la consommation : il coûte souvent plus cher qu’un placement ne rapporte.', 'Garde la réserve sur un support sûr et disponible tout de suite.', 'Place seulement ce dont tu n’as pas besoin avant 5 à 8 ans, en plusieurs fois.', 'Diversifie, regarde les frais, et refuse toute promesse de gain rapide.'].map(text => h('li', null, icon('check'), h('span', null, text)))),
+        h('p', {class: 'small'}, outLink('https://www.amf-france.org/fr/espace-epargnants/actualites-mises-en-garde/vous-avez-un-capital-placer-que-faire', 'Les conseils de l’AMF avant de placer')),
+        h('p', {class: 'soft small'}, 'Ces repères sont généraux et ne remplacent pas un conseil personnalisé.'))),
+    h('div', null,
+      h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Le jour du salaire')), h('ol', {class: 'pay', style: {padding: '0', margin: '0', 'list-style': 'none'}}, pay.map(([label, amount]) => h('li', null, h('span', null, label), h('strong', {class: 'tab'}, amount)))),
+        h('p', {class: 'soft small', style: {'margin-top': '10px'}}, 'S’il reste de l’argent à la fin du mois, verse-le en sécurité.')),
+      h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Les règles connues')),
+        h('p', {class: 'soft small', style: {'margin-bottom': '12px'}}, 'La zone verte est le repère, le trait est ta khotta.'),
+        bench('Besoins', k.shares.needs, 50, 60, 'Charges, quotidien et imprévus. 50 % pour la règle 50/30/20, jusqu’à 60 % de charges pour Ramit Sethi.', outLink('https://www.kiplinger.com/personal-finance/how-to-save-money/50-30-20-budget-rule-save-money', 'Règle 50/30/20')),
+        bench('Envies', k.shares.wants, 20, 35, '30 % dans la règle 50/30/20, 20 à 35 % chez Ramit Sethi.', outLink('https://www.fool.com/the-ascent/personal-finance/articles/ramit-sethi-recommends-spending-this-much-on-fun/', 'Ramit Sethi')),
+        bench('Épargne et investissement', k.shares.saving, 20, 25, '20 % dans la règle 50/30/20, 20 à 25 % dans le plan de Ramit Sethi.', outLink('https://www.synchrony.com/blog/bank/what-is-conscious-spending-plan', 'Le détail')),
+        h('div', {class: 'bench'}, h('b', null, 'Réserve : 3 à 6 mois de dépenses'), h('p', {class: 'soft small'}, 'Le repère le plus cité pour les coups durs. ', outLink('https://www.caisse-epargne.fr/epargner/epargne-de-precaution/', 'Épargne de précaution')))),
+      cloverCard(data))));
 }
 function safetyMini(data) {
   const status = core.safetyStatus(profile(), data);
@@ -453,7 +582,7 @@ function expensesView() {
   const groups = Map.groupBy ? Map.groupBy(shown, item => item.undated ? '' : item.date) : shown.reduce((map, item) => map.set(item.undated ? '' : item.date, [...(map.get(item.undated ? '' : item.date) ?? []), item]), new Map());
   return h('div', null,
     h('div', {class: 'head'}, h('div', null, h('h1', null, 'Dépenses'), h('p', null, filter === 'income' ? `${money(data.extra)} en plus du salaire.` : `${money(total)} dépensés hors charges fixes.`)),
-      h('div', {class: 'btns'}, btn('Charges fixes', () => go('charges'), '', 'repeat'), btn('Rentrée d’argent', () => incomeDialog(), '', 'wallet'), btn('Ajouter', () => expenseDialog(), 'primary', 'plus'))),
+      h('div', {class: 'btns'}, btn('Historique', () => go('history'), 'only-m', 'chart'), btn('Charges fixes', () => go('charges'), '', 'repeat'), btn('Rentrée d’argent', () => incomeDialog(), '', 'wallet'), btn('Ajouter', () => expenseDialog(), 'primary', 'plus'))),
     h('div', {class: 'filters', role: 'group', 'aria-label': 'Filtrer'}, filters.map(([key, label]) => h('button', {type: 'button', 'aria-pressed': String(filter === key), onclick: () => { filter = key; render(); }}, label))),
     h('section', {class: 'card'}, shown.length ? [...groups].sort((a, b) => a[0] < b[0] ? 1 : -1).map(([date, items]) => [
       h('div', {class: 'day'}, date ? dayName(date) : 'Sans date précise'),
@@ -485,13 +614,13 @@ function chargesView() {
 }
 
 /* ---------- Épargne ---------- */
-const potName = pot => pot === 'safety' ? 'Réserve de sécurité' : profile().projects.find(item => item.id === pot)?.name ?? 'Projet';
+const potName = pot => pot === 'safety' ? 'Réserve de sécurité' : pot === 'invest' ? 'Investissement' : profile().projects.find(item => item.id === pot)?.name ?? 'Projet';
 function savingsView() {
   const data = compute(), p = profile(), status = core.safetyStatus(p, data), env = data.envelopes;
   const moves = [...data.deposits].sort((a, b) => a.date < b.date ? 1 : -1);
   const needed = core.sum(p.projects.map(item => core.projectStatus(p, item, month).perMonth ?? 0));
   return h('div', null,
-    h('div', {class: 'head'}, h('div', null, h('h1', null, 'Épargne'), h('p', null, data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(env.safety.budget + env.projects.budget)}, dont ${money(data.saved)} déjà versés.`)),
+    h('div', {class: 'head'}, h('div', null, h('h1', null, 'Épargne'), h('p', null, data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(core.sum(SAVING_KEYS.map(key => env[key].budget)))}, dont ${money(data.saved)} déjà versés.`)),
       h('div', {class: 'btns'}, btn('Retirer', () => depositDialog('safety', true), '', 'up'), btn('Verser', () => depositDialog(), 'primary', 'down'))),
     h('section', {class: 'card reserve', style: {'--c': 'var(--savings)'}},
       h('div', {class: 'card-head'}, h('h2', null, 'Réserve de sécurité'), h('button', {type: 'button', class: 'link small', onclick: reserveDialog}, 'Régler l’objectif')),
@@ -501,6 +630,9 @@ function savingsView() {
         status.target !== null && h('span', {class: 'tab'}, `Objectif ${money(status.target)}`)),
       status.missing !== null && h('p', {style: {'margin-top': '14px'}}, status.missing === 0 ? 'Objectif atteint. Garde cette somme sur un compte disponible à tout moment.' :
         status.months ? `Avec ${money(env.safety.budget)} par mois, objectif atteint en ${monthName(core.addMonths(month, status.months))}.` : status.months === 0 ? 'Avec le versement de ce mois-ci, objectif atteint.' : 'Ajoute une part Sécurité dans ton plan pour avancer.')),
+    h('section', {class: 'card', style: {'--c': 'var(--savings)'}}, h('div', {class: 'card-head'}, h('h2', null, 'Investissement'), h('button', {type: 'button', class: 'link small', onclick: investDialog}, 'Déjà investi')),
+      h('div', {class: 'between', style: {'align-items': 'center'}}, h('div', null, h('strong', {class: 'num', style: {'font-size': '2rem'}}, money(core.potBalance(p, 'invest', month))), h('div', {class: 'soft small'}, env.invest.budget ? `Versé au total. Ce mois-ci : ${money(env.invest.spent)} sur ${money(env.invest.budget)}.` : 'Versé au total. Ta khotta dit quand commencer.')),
+        h('div', {class: 'btns'}, btn('Ma khotta', () => go('khotta'), 'slim', 'clover'), btn('Verser', () => depositDialog('invest'), 'slim', 'sprout')))),
     h('div', {class: 'head'}, h('div', null, h('h2', null, 'Mes projets'), data.income !== null && needed > env.projects.budget && h('p', null, `Tes échéances demandent ${money(needed)} par mois, ton plan prévoit ${money(env.projects.budget)}. Repousse une date ou augmente cette part.`)), btn('Nouveau projet', () => projectDialog(), '', 'plus')),
     p.projects.length ? h('div', {class: 'projects'}, p.projects.map(item => {
       const s = core.projectStatus(p, item, month);
@@ -509,7 +641,7 @@ function savingsView() {
         h('p', {class: 'soft small'}, s.missing === 0 ? 'Projet financé.' : s.late ? `Échéance dépassée, il manque ${money(s.missing)}.` : s.perMonth !== null ? `${money(s.perMonth)} par mois jusqu’en ${monthName(item.deadline)}.` : `Il manque ${money(s.missing)}.`),
         btn('Verser', () => depositDialog(item.id), 'slim'));
     })) : h('section', {class: 'card empty'}, h('p', null, 'Un voyage, une voiture, un apport : donne un nom et un montant à ton objectif.'), btn('Créer un projet', () => projectDialog(), 'primary', 'plus')),
-    h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Mouvements du mois')), moves.length ? moves.map(item => h('div', {class: 'row' + (item.id === freshId ? ' fresh' : '')}, badge(item.pot === 'safety' ? 'shield' : 'flag', 'safety'),
+    h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Mouvements du mois')), moves.length ? moves.map(item => h('div', {class: 'row' + (item.id === freshId ? ' fresh' : '')}, badge(ENV_ICON[item.pot] ?? 'flag', 'safety'),
       h('div', null, h('div', {class: 'label'}, potName(item.pot)), h('div', {class: 'soft small'}, dayName(item.date))), h('div', {class: 'amount' + (item.amount > 0 ? ' in' : '')}, (item.amount > 0 ? '+ ' : '− ') + money(Math.abs(item.amount))),
       h('div', {class: 'acts'}, iconBtn('trash', 'Supprimer ce mouvement', () => removeFrom('deposits', item, 'Mouvement supprimé.'))))) : h('p', {class: 'soft'}, 'Aucun versement ce mois-ci.')));
 }
@@ -575,15 +707,15 @@ function settingsView() {
           h('div', {class: 'soft small'}, salary.amount === null ? 'À saisir' : (salary.estimated ? 'Net estimé à partir du brut. ' : 'Net. ') + (salary.inherited ? `Repris de ${monthName(salary.from)}.` : `Saisi pour ${monthName(month)}.`)),
           data.extra > 0 && h('div', {class: 'soft small'}, `+ ${money(data.extra)} d’autres rentrées ce mois-ci.`)),
           h('div', {class: 'btns'}, btn('Autre rentrée', () => incomeDialog(), 'slim', 'plus'), btn('Modifier', () => salaryDialog(), 'slim', 'pen')))),
-      h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Mon plan'), h('button', {type: 'button', class: 'link small', onclick: () => change(q => { q.plan = core.defaultPlan(); }, 'Plan conseillé rétabli.')}, 'Plan conseillé')),
+      h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Mon plan'), h('button', {type: 'button', class: 'link small', onclick: () => go('khotta')}, 'Voir ma khotta')),
         percentEditor(ENVELOPES.map(item => ({...item, icon: ENV_ICON[item.key], envelope: item.key})), p.plan, data.income, values => change(q => { q.plan = values; }, 'Plan enregistré.'))),
       h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('div', null, h('h2', null, 'Limites plaisir'), h('p', {class: 'soft small', style: {'margin-top': '4px'}}, 'Comment partager ton enveloppe Plaisir.'))),
         percentEditor(LEISURE, p.split, data.income === null ? null : data.envelopes.leisure.budget, values => change(q => { q.split = values; }, 'Limites enregistrées.')))),
     h('div', null,
-      h('section', {class: 'card stack-sm'}, h('h2', null, 'Profil'), h('p', null, p.name),
+      h('section', {class: 'card stack-sm'}, h('h2', null, 'Profil'), h('p', null, p.name), 
         h('div', {class: 'btns'}, !demo && btn('Renommer', renameDialog, 'slim', 'pen'), btn('Changer de profil', () => { demo = null; gate = true; render(); }, 'slim'), !demo && btn('Supprimer', deleteProfileDialog, 'slim danger', 'trash'))),
       h('section', {class: 'card stack-sm'}, h('h2', null, 'Prix d’un café'), h('p', {class: 'soft small'}, 'Sert à traduire ta limite en nombre de cafés.'), coffeeField(p)),
-      h('section', {class: 'card stack-sm'}, h('h2', null, 'Apparence'), h('div', {class: 'seg', role: 'group', 'aria-label': 'Thème'}, [['auto', 'Auto'], ['light', 'Clair'], ['dark', 'Sombre']].map(([key, label]) => h('button', {type: 'button', 'aria-pressed': String(state.theme === key), onclick: () => { state.theme = key; save(); render(); }}, label)))),
+      h('section', {class: 'card stack-sm'}, h('h2', null, 'Apparence'), h('div', {class: 'seg', role: 'group', 'aria-label': 'Thème'}, [['dark', 'Grimoire'], ['light', 'Parchemin'], ['auto', 'Auto']].map(([key, label]) => h('button', {type: 'button', 'aria-pressed': String(state.theme === key), onclick: () => { state.theme = key; save(); render(); }}, label)))),
       h('section', {class: 'card stack-sm'}, h('h2', null, 'Mes données'), h('p', {class: 'soft small'}, 'Tout reste dans ce navigateur, sur cet appareil. Exporte une sauvegarde de temps en temps, ou pour passer du téléphone à l’ordinateur.'),
         h('div', {class: 'btns'}, btn('Exporter', exportJson, 'slim', 'down'), btn('Importer', importJson, 'slim', 'up'), btn('Tableau CSV', exportCsv, 'slim', 'list')),
         !demo && h('button', {type: 'button', class: 'link small', style: {'justify-self': 'start'}, onclick: () => { demo = demoProfile(); last.clear(); wasGate = true; view = 'home'; month = now().slice(0, 7); render(); }}, 'Voir un exemple')))));
@@ -677,6 +809,7 @@ function expenseDialog(item = null, preset = {}) {
     closeDialog();
     freshId = entry.id;
     const other = entry.date.slice(0, 7) !== month;
+    slash();
     change(p => { p.expenses = [...p.expenses.filter(old => old.id !== entry.id), entry]; }, other ? `Enregistré dans ${monthName(entry.date.slice(0, 7))}.` : item ? 'Dépense modifiée.' : `${money(value)} ajoutés.`);
   });
   refresh();
@@ -791,11 +924,15 @@ function incomeDialog(item = null) {
 
 function depositDialog(pot = null, withdraw = false) {
   const p = profile(), data = compute(), error = errorBox();
-  const select = h('select', {class: 'input'}, [['safety', 'Réserve de sécurité'], ...p.projects.map(item => [item.id, item.name])].map(([value, label]) => h('option', {value, selected: value === (pot ?? 'safety')}, label)));
-  const planned = data.income === null ? null : Math.max(0, pot && pot !== 'safety' ? data.envelopes.projects.left : data.envelopes.safety.left);
+  const leftOf = key => data.income === null ? 0 : Math.max(0, data.envelopes[SAVING_KEYS.includes(key) ? key : 'projects'].left);
+  if (pot === null) pot = ['safety', 'invest', ...p.projects.map(item => item.id)].find(key => leftOf(key) > 0) ?? 'safety';
+  const select = h('select', {class: 'input'}, [['safety', 'Réserve de sécurité'], ['invest', 'Investissement'], ...p.projects.map(item => [item.id, item.name])].map(([value, label]) => h('option', {value, selected: value === (pot ?? 'safety')}, label)));
+  const planned = leftOf(pot);
   const amount = moneyInput({class: 'input big', value: !withdraw && planned ? formatInput(planned) : '', placeholder: '0', 'data-first': '', 'aria-label': 'Montant en euros'});
   const date = h('input', {class: 'input', type: 'date', value: defaultDate()});
-  let out = withdraw;
+  let out = withdraw, touched = false;
+  amount.addEventListener('input', () => { touched = true; });
+  select.addEventListener('change', () => { if (!touched && !out) amount.value = formatInput(leftOf(select.value) || null); });
   const mode = h('div', {class: 'seg', role: 'group', 'aria-label': 'Type de mouvement'}, [[false, 'Verser'], [true, 'Retirer']].map(([value, label]) => h('button', {type: 'button', 'aria-pressed': String(out === value), onclick: event => {
     out = value;
     for (const item of mode.children) item.setAttribute('aria-pressed', String(item === event.currentTarget));
@@ -809,6 +946,7 @@ function depositDialog(pot = null, withdraw = false) {
     const entry = {id: core.newId(), date: date.value, pot: select.value, amount: out ? -value : value};
     closeDialog();
     freshId = entry.id;
+    if (!out) burst();
     change(q => { q.deposits.push(entry); }, out ? 'Retrait enregistré.' : `${money(value)} mis de côté.`);
   });
 }
@@ -825,6 +963,16 @@ function reserveDialog() {
     if (target.value.trim() !== '' && !targetValue) return error.show('Ce montant est incorrect.', target);
     closeDialog();
     change(q => { q.safety = {initial: initialValue, months: monthsValue, target: targetValue}; }, 'Réserve mise à jour.');
+  });
+}
+
+function investDialog() {
+  const p = profile(), error = errorBox(), initial = moneyInput({value: formatInput(p.invest.initial), 'data-first': ''});
+  openDialog('Investissement', close => [field('Déjà investi avant d’utiliser le site', wrapMoney(initial), 'Les sommes versées, sans les gains ni les pertes.'), error.node, foot(close, 'Enregistrer')], () => {
+    const value = initial.value.trim() === '' ? 0 : core.parseMoney(initial.value);
+    if (value === null) return error.show('Ce montant est incorrect.', initial);
+    closeDialog();
+    change(q => { q.invest = {initial: value}; }, 'Investissement mis à jour.');
   });
 }
 
@@ -937,9 +1085,10 @@ function gateView() {
     last.clear();
     save();
     render();
+    openBook();
   };
   return h('main', {class: 'gate', id: 'main', tabIndex: -1}, h('div', {class: 'card enter'}, brand(),
-    h('div', null, h('h1', null, state.profiles.length ? 'Bon retour' : 'Ton argent, au clair'), h('p', {class: 'soft', style: {'margin-top': '8px'}}, state.profiles.length ? 'Choisis ton profil.' : 'Saisis ton salaire et tes dépenses. Le site te dit ce que tu peux encore dépenser et combien mettre de côté.')),
+    h('div', null, h('h1', null, state.profiles.length ? 'Bon retour' : 'Ouvre ton grimoire'), h('p', {class: 'soft', style: {'margin-top': '8px'}}, state.profiles.length ? 'Choisis ton profil.' : 'Saisis ton salaire et tes dépenses. Le site te dit ce que tu peux encore dépenser et combien mettre de côté.')),
     notice && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, notice),
     !storageOk && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, 'L’enregistrement est bloqué dans ce navigateur.'),
     state.profiles.length > 0 && h('ul', null, state.profiles.map(item => h('li', null, h('button', {type: 'button', class: 'btn', onclick: () => open(item)}, h('span', {class: 'avatar'}, item.name.slice(0, 1).toUpperCase()), item.name)))),
@@ -955,7 +1104,7 @@ function gateView() {
       }
       open(item);
     }}, field(state.profiles.length ? 'Nouveau profil' : 'Prénom', name), keep && h('label', {class: 'check'}, keep, 'Reprendre le budget déjà saisi ici'), error.node, h('button', {type: 'submit', class: 'btn primary'}, 'Ouvrir mon budget')),
-    h('div', {class: 'btns'}, btn('Voir un exemple', () => { demo = demoProfile(); gate = false; view = 'home'; month = now().slice(0, 7); last.clear(); render(); }, 'slim'), btn('Importer une sauvegarde', importJson, 'slim', 'up')),
+    h('div', {class: 'btns'}, btn('Voir un exemple', () => { demo = demoProfile(); gate = false; view = 'home'; month = now().slice(0, 7); last.clear(); render(); openBook(); }, 'slim'), btn('Importer une sauvegarde', importJson, 'slim', 'up')),
     h('p', {class: 'soft small'}, 'Tes données restent dans ce navigateur. Toute personne qui l’utilise peut ouvrir les profils.')));
 }
 
@@ -977,4 +1126,8 @@ document.addEventListener('visibilitychange', () => {
 
 load();
 render();
+try {
+  if (profile() && !sessionStorage.getItem('budget-clair-ouvert')) openBook();
+  sessionStorage.setItem('budget-clair-ouvert', '1');
+} catch { /* stockage bloqué */ }
 })();

@@ -16,8 +16,10 @@
     {key: 'leisure', label: 'Plaisir', hint: 'Cafés, achats en ligne, sorties', plan: 10},
     {key: 'unexpected', label: 'Imprévus', hint: 'Réparations, factures surprises', plan: 5},
     {key: 'safety', label: 'Sécurité', hint: 'Argent de côté pour les coups durs', plan: 10},
-    {key: 'projects', label: 'Épargne projets', hint: 'Voyage, voiture, apport', plan: 10}
+    {key: 'projects', label: 'Épargne projets', hint: 'Voyage, voiture, apport', plan: 5},
+    {key: 'invest', label: 'Investissement', hint: 'Argent placé pour le long terme', plan: 5}
   ];
+  const SAVING_KEYS = ['safety', 'projects', 'invest'];
   const ENVELOPE = Object.fromEntries(ENVELOPES.map(item => [item.key, item]));
 
   const CATEGORIES = [
@@ -72,11 +74,11 @@
   function createProfile(name) {
     return {
       id: newId(), name, plan: defaultPlan(), split: defaultSplit(), coffee: 300,
-      safety: {initial: 0, months: 3, target: null},
+      safety: {initial: 0, months: 3, target: null}, invest: {initial: 0},
       projects: [], deposits: [], salaries: {}, incomes: [], expenses: [], charges: []
     };
   }
-  const emptyState = () => ({version: VERSION, active: null, theme: 'auto', profiles: []});
+  const emptyState = () => ({version: VERSION, active: null, theme: 'dark', skin: 1, profiles: []});
 
   const text = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
   const cents = (value, min = 0) => Number.isSafeInteger(value) && value >= min && value <= MAX_AMOUNT;
@@ -96,16 +98,19 @@
   function cleanProfile(raw) {
     const profile = createProfile(text(raw?.name, 32) || 'Mon budget');
     profile.id = id(raw?.id);
-    profile.plan = cleanPercents(raw?.plan, profile.plan);
+    /* Un plan d'avant l'enveloppe Investissement est gardé tel quel, avec 0 % investi. */
+    const plan = raw?.plan && !Object.hasOwn(raw.plan, 'invest') ? {...raw.plan, invest: 0} : raw?.plan;
+    profile.plan = cleanPercents(plan, profile.plan);
     profile.split = cleanPercents(raw?.split, profile.split);
     if (cents(raw?.coffee, 1)) profile.coffee = raw.coffee;
     if (cents(raw?.safety?.initial)) profile.safety.initial = raw.safety.initial;
     if (Number.isInteger(raw?.safety?.months) && raw.safety.months >= 1 && raw.safety.months <= 24) profile.safety.months = raw.safety.months;
     if (cents(raw?.safety?.target, 1)) profile.safety.target = raw.safety.target;
+    if (cents(raw?.invest?.initial)) profile.invest.initial = raw.invest.initial;
     profile.projects = list(raw?.projects).filter(item => text(item.name, 40) && cents(item.target, 1)).map(item => ({
       id: id(item.id), name: text(item.name, 40), target: item.target, deadline: isMonth(item.deadline) ? item.deadline : null
     }));
-    const pots = new Set(['safety', ...profile.projects.map(item => item.id)]);
+    const pots = new Set(['safety', 'invest', ...profile.projects.map(item => item.id)]);
     profile.deposits = list(raw?.deposits)
       .filter(item => isDate(item.date) && pots.has(item.pot) && Number.isSafeInteger(item.amount) && item.amount !== 0 && Math.abs(item.amount) <= MAX_AMOUNT)
       .map(item => ({id: id(item.id), date: item.date, pot: item.pot, amount: item.amount}));
@@ -134,7 +139,7 @@
     const state = emptyState();
     if (!raw || typeof raw !== 'object' || !Array.isArray(raw.profiles)) return state;
     state.profiles = list(raw.profiles).map(cleanProfile);
-    if (['auto', 'light', 'dark'].includes(raw.theme)) state.theme = raw.theme;
+    if (raw.skin === 1 && ['auto', 'light', 'dark'].includes(raw.theme)) state.theme = raw.theme;
     state.active = state.profiles.some(item => item.id === raw.active) ? raw.active : null;
     return state;
   }
@@ -211,7 +216,7 @@
 
   /* ---------- Calcul du mois ---------- */
   function potBalance(profile, pot, month) {
-    const initial = pot === 'safety' ? profile.safety.initial : 0;
+    const initial = pot === 'safety' ? profile.safety.initial : pot === 'invest' ? profile.invest.initial : 0;
     return initial + sum(profile.deposits.filter(item => item.pot === pot && item.date.slice(0, 7) <= month).map(item => item.amount));
   }
   const movements = (items, sign) => sum(items.map(item => Math.max(0, sign * item.amount)));
@@ -233,14 +238,13 @@
       leaf[item.category].count += 1;
     }
     const deposits = profile.deposits.filter(inMonth);
-    const bySafety = deposits.filter(item => item.pot === 'safety');
-    const byProjects = deposits.filter(item => item.pot !== 'safety');
+    const envelopeOf = item => item.pot === 'safety' || item.pot === 'invest' ? item.pot : 'projects';
     const withdrawn = movements(deposits, -1);
 
     const envelopes = {};
     for (const {key} of ENVELOPES) {
       const budget = income === null ? null : Math.round(income * profile.plan[key] / 100);
-      const spent = key === 'safety' ? movements(bySafety, 1) : key === 'projects' ? movements(byProjects, 1) :
+      const spent = SAVING_KEYS.includes(key) ? movements(deposits.filter(item => envelopeOf(item) === key), 1) :
         sum(CATEGORIES.filter(item => item.envelope === key).map(item => leaf[item.key].spent));
       envelopes[key] = {
         key, budget, spent, plan: profile.plan[key],
@@ -250,7 +254,7 @@
       };
     }
     const spent = sum(['fixed', 'essentials', 'leisure', 'unexpected'].map(key => envelopes[key].spent));
-    const saved = envelopes.safety.spent + envelopes.projects.spent;
+    const saved = sum(SAVING_KEYS.map(key => envelopes[key].spent));
     const cash = income === null ? null : income + withdrawn - spent - saved;
 
     const currentMonth = today.slice(0, 7);
@@ -267,7 +271,8 @@
         essentials: Math.max(envelopes.essentials.budget, envelopes.essentials.spent),
         unexpected: Math.max(envelopes.unexpected.budget, envelopes.unexpected.spent),
         safety: Math.max(envelopes.safety.budget, envelopes.safety.spent),
-        projects: Math.max(envelopes.projects.budget, envelopes.projects.spent)
+        projects: Math.max(envelopes.projects.budget, envelopes.projects.spent),
+        invest: Math.max(envelopes.invest.budget, envelopes.invest.spent)
       };
       const free = income + withdrawn - sum(Object.values(reserved)) - envelopes.leisure.spent;
       tolerance = Math.min(envelopes.leisure.left, free);
@@ -340,20 +345,106 @@
     return {...base, verdict: 'no', reason: 'over', over: missing, safety: envelope === 'unexpected' && safety >= missing ? safety : null};
   }
 
-  /* ---------- Adapter le plan ---------- */
-  /* Fixe une part et répartit le reste sur les autres enveloppes, en gardant leurs proportions. */
-  function rebalance(plan, key, value) {
-    const target = Math.max(0, Math.min(100, Math.round(value)));
-    const others = Object.keys(plan).filter(item => item !== key);
-    const weight = sum(others.map(item => plan[item]));
-    const rest = 100 - target;
-    const exact = others.map(item => ({item, value: weight ? plan[item] * rest / weight : rest / others.length}));
-    const result = {...plan, [key]: target};
-    for (const entry of exact) result[entry.item] = Math.floor(entry.value + 1e-9);
-    let missing = 100 - sum(Object.values(result));
-    exact.sort((a, b) => (b.value % 1) - (a.value % 1));
-    for (let i = 0; missing > 0; i++, missing--) result[exact[i % exact.length].item] += 1;
+  /* ---------- Khotta : plan calculé ----------
+     Repères : 50/30/20 (Warren et Tyagi), 50 à 60 % de charges et 20 à 25 % d'épargne (Sethi),
+     réserve de 3 à 6 mois de dépenses avant d'investir davantage. */
+  const STAGES = [
+    {title: 'Poser le bouclier', goal: '1 mois de réserve', upTo: 1, split: {safety: 80, projects: 20, invest: 0}},
+    {title: 'Renforcer la réserve', goal: '3 mois de réserve', upTo: 3, split: {safety: 60, projects: 20, invest: 20}},
+    {title: 'Faire grandir l’argent', goal: '6 mois de réserve', upTo: 6, split: {safety: 25, projects: 25, invest: 50}},
+    {title: 'Bâtir sur la durée', goal: 'Réserve complète', upTo: Infinity, split: {safety: 0, projects: 35, invest: 65}}
+  ];
+  const stageFor = months => STAGES.findIndex(item => months < item.upTo);
+
+  function largestRemainder(exact, total) {
+    const keys = Object.keys(exact);
+    const result = Object.fromEntries(keys.map(key => [key, Math.floor(exact[key] + 1e-9)]));
+    const order = [...keys].sort((x, y) => (exact[y] - result[y]) - (exact[x] - result[x]));
+    let missing = total - sum(Object.values(result));
+    for (let i = 0; missing > 0; i++, missing--) result[order[i % order.length]] += 1;
     return result;
+  }
+
+  /* Part réelle du quotidien sur les trois derniers mois terminés et suivis. */
+  function usualEssentials(profile, month, today) {
+    const shares = [];
+    for (let i = 1; i <= 3; i++) {
+      const data = compute(profile, addMonths(month, -i), today);
+      const count = data.expenses.filter(item => CATEGORY[item.category].envelope === 'essentials').length;
+      if (data.phase === 'past' && data.income && count >= 3) shares.push(data.envelopes.essentials.share);
+    }
+    return shares.length ? sum(shares) / shares.length : null;
+  }
+
+  function recommend(profile, data, today) {
+    if (data.income === null || data.income <= 0) return null;
+    const {income} = data;
+    const hasCharges = data.envelopes.fixed.spent > 0;
+    const fixedShare = hasCharges ? data.envelopes.fixed.share : 35;
+    const fixed = Math.min(100, Math.ceil(fixedShare - 1e-9));
+    const usual = usualEssentials(profile, data.month, today);
+    const daily = usual === null ? 15 : Math.max(10, Math.min(25, Math.ceil(usual)));
+    const ideal = {essentials: daily, leisure: 20, unexpected: 5, saving: 25};
+    const floor = {essentials: 10, leisure: 5, unexpected: 3, saving: 10};
+    const rest = 100 - fixed, best = sum(Object.values(ideal)), least = sum(Object.values(floor));
+    const exact = {};
+    for (const key of Object.keys(ideal)) {
+      exact[key] = rest >= best ? ideal[key] : rest >= least ? floor[key] + (ideal[key] - floor[key]) * (rest - least) / (best - least) : floor[key] * rest / least;
+    }
+    if (rest > best) {
+      const bonus = rest - best, fun = Math.min(5, bonus * 0.3);
+      exact.leisure += fun;
+      exact.saving += bonus - fun;
+    }
+    const parts = largestRemainder(exact, rest);
+    const balance = potBalance(profile, 'safety', data.month);
+    const monthly = Math.round(income * (fixed + parts.essentials) / 100);
+    const covered = monthly ? Math.max(0, balance) / monthly : 0;
+    const stage = stageFor(covered);
+    const saving = split => largestRemainder(Object.fromEntries(SAVING_KEYS.map(key => [key, parts.saving * split[key] / 100])), parts.saving);
+    const plan = {fixed, essentials: parts.essentials, leisure: parts.leisure, unexpected: parts.unexpected, ...saving(STAGES[stage].split)};
+    const amounts = Object.fromEntries(Object.keys(plan).map(key => [key, Math.round(income * plan[key] / 100)]));
+
+    /* Dates estimées de chaque palier, en suivant la khotta. Le mois en cours compte. */
+    const reached = [1, 3, 6].map(months => ({months, target: monthly * months, month: balance >= monthly * months ? data.month : null, done: balance >= monthly * months}));
+    let simulated = Math.max(0, balance - (data.phase === 'current' ? data.envelopes.safety.spent : 0));
+    for (let i = 0; i < 240 && reached.some(item => !item.month); i++) {
+      simulated += Math.round(income * saving(STAGES[stageFor(monthly ? simulated / monthly : 0)].split).safety / 100);
+      for (const item of reached) if (!item.month && simulated >= item.target) item.month = addMonths(data.month, i);
+    }
+    const later = saving(STAGES[3].split).invest;
+    return {
+      plan, amounts, stage, covered, monthly, reached, hasCharges, usual, fixedShare,
+      tight: rest < least, high: fixed > 60,
+      cut: hasCharges && fixed > 50 ? Math.max(0, data.envelopes.fixed.spent - Math.round(income / 2)) : 0,
+      shares: {needs: fixed + plan.essentials + plan.unexpected, wants: plan.leisure, saving: parts.saving},
+      investLater: Math.round(income * later / 100),
+      active: Object.keys(plan).every(key => Math.abs(plan[key] - profile.plan[key]) < 0.05)
+    };
+  }
+  /* Versements mensuels en fin de mois, au taux annuel donné. */
+  function project(amount, years, rate) {
+    const r = (1 + rate) ** (1 / 12) - 1, n = years * 12;
+    return Math.round(r ? amount * ((1 + r) ** n - 1) / r : amount * n);
+  }
+
+  /* Le trèfle à cinq feuilles : les étapes franchies. */
+  function clover(profile, data, today) {
+    const covers = recommend(profile, data, today)?.covered ?? 0;
+    const env = data.envelopes;
+    let kept = 0;
+    const current = today.slice(0, 7);
+    for (let i = 1; i <= 3; i++) {
+      const past = compute(profile, addMonths(current, -i), today);
+      if (past.income !== null && past.spent > 0 && past.saved > 0 && past.cash >= 0 && past.envelopes.leisure.left >= 0) kept++;
+    }
+    return [
+      {title: 'Plan posé', hint: 'Salaire, charges et parts à jour', done: data.salary.amount !== null && env.fixed.spent > 0 && env.fixed.share <= env.fixed.plan + 0.5},
+      {title: '1 mois de réserve', hint: 'Le premier bouclier', done: covers >= 1},
+      {title: '3 mois de réserve', hint: 'Les coups durs sont couverts', done: covers >= 3},
+      {title: 'Premier investissement', hint: 'Une somme placée pour longtemps', done: potBalance(profile, 'invest', data.month) > 0},
+      {title: '3 mois tenus', hint: `${kept} sur 3 sans dépassement`, done: kept === 3}
+    ];
   }
 
   /* ---------- Conseils ---------- */
@@ -374,7 +465,7 @@
       add('critical', 'Ton mois est à découvert', `Tes sorties dépassent tes rentrées de ${money(-data.cash)}. Bloque les achats plaisir et décale ce qui peut attendre.`);
     }
     if (env.fixed.spent && env.fixed.share > env.fixed.plan + 0.5) {
-      add('warn', 'Tes charges fixes dépassent le plan', `Elles prennent ${percent(env.fixed.share)} de tes revenus pour un plafond de ${percent(env.fixed.plan)}, soit ${money(-env.fixed.left)} de trop. Renégocie un abonnement ou une assurance, ou adapte ton plan.`, 'adapt');
+      add('warn', 'Tes charges fixes dépassent le plan', `Elles prennent ${percent(env.fixed.share)} de tes revenus pour un plafond de ${percent(env.fixed.plan)}, soit ${money(-env.fixed.left)} de trop. Renégocie un abonnement ou une assurance, ou suis la khotta recalculée.`, 'khotta');
     } else if (!env.fixed.spent && data.phase !== 'past') {
       add('info', 'Ajoute tes charges fixes', `En attendant, ${money(env.fixed.budget)} sont réservés pour elles. Avec tes vrais montants, le calcul sera exact.`, 'charges');
     }
@@ -406,14 +497,14 @@
       if (data.limitedBy === 'cash' && data.tolerance > 0 && env.fixed.left >= 0) {
         add('info', 'Ta tolérance plaisir est réduite', `Une autre enveloppe a débordé. Il reste ${money(data.tolerance)} au lieu de ${money(env.leisure.left)}.`);
       }
-      const toSave = Math.max(0, env.safety.left) + Math.max(0, env.projects.left);
+      const toSave = sum(SAVING_KEYS.map(key => Math.max(0, env[key].left)));
       if (toSave > 0 && data.phase === 'current' && data.cash >= toSave) {
-        add('info', `${money(toSave)} à mettre de côté ce mois-ci`, `${[env.safety.left > 0 && `${money(env.safety.left)} en sécurité`, env.projects.left > 0 && `${money(env.projects.left)} pour tes projets`].filter(Boolean).join(' et ')}. Le plus simple est de faire le virement dès que le salaire arrive.`, 'deposit');
+        add('info', `${money(toSave)} à mettre de côté ce mois-ci`, `${[env.safety.left > 0 && `${money(env.safety.left)} en sécurité`, env.projects.left > 0 && `${money(env.projects.left)} pour tes projets`, env.invest.left > 0 && `${money(env.invest.left)} à investir`].filter(Boolean).join(', ')}. Le plus simple est de faire le virement dès que le salaire arrive.`, 'deposit');
       } else if (toSave > 0 && data.phase === 'current' && data.cash > 0) {
         add('warn', 'Ton épargne du mois n’est plus couverte', `Il reste ${money(data.cash)} pour ${money(toSave)} prévus. Mets de côté ce que tu peux, même un petit montant.`, 'deposit');
       }
       if (env.fixed.spent && env.fixed.left > income * 0.04) {
-        add('good', `${money(env.fixed.left)} de marge sur tes charges`, `Tes charges restent sous le plafond de ${percent(env.fixed.plan)}. Verse cette marge en sécurité, ou adapte ton plan.`, 'adapt');
+        add('good', `${money(env.fixed.left)} de marge sur tes charges`, `Tes charges restent sous le plafond de ${percent(env.fixed.plan)}. La khotta la répartit pour toi.`, 'khotta');
       }
     } else if (data.cash > 0) {
       add('good', `Il t’est resté ${money(data.cash)}`, 'Si cet argent est encore sur ton compte, verse-le dans ta réserve de sécurité.');
@@ -430,7 +521,7 @@
       }
     }
     const safety = safetyStatus(profile, data);
-    if (safety.target && safety.missing === 0) add('good', 'Ta réserve de sécurité est complète', 'Tu peux orienter cette part vers tes projets en ajustant ton plan.', 'plan');
+    if (safety.target && safety.missing === 0) add('good', 'Ta réserve de sécurité est complète', 'Tu peux investir davantage : la khotta recalcule tes parts.', 'khotta');
     if (!tips.some(tip => tip.level === 'critical' || tip.level === 'warn') && env.leisure.spent + env.essentials.spent > 0) {
       add('good', 'Tu tiens ton plan', 'Aucun plafond n’est dépassé. Continue comme ça.');
     }
@@ -459,6 +550,6 @@
     isMonth, isDate, daysInMonth, addMonths, monthsBetween, parseMoney, newId, money, percent, sum, pad,
     createProfile, emptyState, cleanProfile, cleanState, migrateV1, migrateProfileV1, defaultPlan, defaultSplit,
     chargesFor, addCharge, updateCharge, stopCharge, salaryFor, compute, potBalance, safetyStatus, projectStatus,
-    canBuy, rebalance, advise, history, firstMonth
+    canBuy, recommend, clover, project, STAGES, SAVING_KEYS, advise, history, firstMonth
   };
 });

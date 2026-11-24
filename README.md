@@ -1,6 +1,8 @@
 # Budget Clair
 
-Un budget mensuel calculé à partir du salaire : plafonds en pourcentage et en euros, tolérance pour les cafés, les achats en ligne et les sorties, réserve de sécurité, projets et conseils.
+Un budget mensuel calculé à partir du salaire : plafonds en pourcentage et en euros, tolérance pour les cafés, les achats en ligne et les sorties, réserve de sécurité, projets, investissement, conseils et « khotta », un plan calculé à partir du salaire et des charges.
+
+L'univers graphique est une création originale inspirée des grimoires. Aucune image officielle n'est utilisée.
 
 Site : https://nostra95.github.io/budget-clair/
 
@@ -20,4 +22,4 @@ Les données restent dans le navigateur (`localStorage`). Rien n'est envoyé sur
 node --test tests/*.test.js
 ```
 
-Polices : Bricolage Grotesque et Figtree, sous licence SIL OFL 1.1 (voir `assets/fonts`).
+Polices : Grenze Gotisch et Alegreya Sans, sous licence SIL OFL 1.1 (voir `assets/fonts`).

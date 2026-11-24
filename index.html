@@ -1,28 +1,28 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Suis ton salaire, tes dépenses et ton épargne, et sache ce que tu peux encore dépenser.">
-<meta name="theme-color" content="#f2f3fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0f111e" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0c0a0d">
 <title>Budget Clair</title>
 <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="assets/icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
-<link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/figtree.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="assets/style.css?v=2.0">
+<link rel="preload" href="assets/fonts/grenze-gotisch.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/alegreya-sans-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/style.css?v=3.0">
 </head>
 <body>
 <a class="skip" href="#main">Aller au contenu</a>
 <div id="app"><noscript>Budget Clair a besoin de JavaScript pour fonctionner.</noscript></div>
 <dialog id="dialog" aria-labelledby="dialog-title"></dialog>
+<div id="fx" aria-hidden="true"></div>
 <div id="tooltip" role="presentation" hidden></div>
 <div id="toast" role="status" aria-live="polite"></div>
-<script src="assets/core.js?v=2.0"></script>
-<script src="assets/app.js?v=2.0"></script>
+<script src="assets/core.js?v=3.0"></script>
+<script src="assets/app.js?v=3.0"></script>
 </body>
 </html>

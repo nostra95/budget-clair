@@ -2,7 +2,7 @@
   "name": "Budget Clair", "short_name": "Budget", "lang": "fr",
   "description": "Ton salaire, tes dépenses et ton épargne.",
   "start_url": "./", "scope": "./", "display": "standalone",
-  "background_color": "#f2f3fb", "theme_color": "#2530b4",
+  "background_color": "#0c0a0d", "theme_color": "#0c0a0d",
   "icons": [
     {"src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png"},
     {"src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
