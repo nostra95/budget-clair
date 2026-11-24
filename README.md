@@ -2,7 +2,7 @@
 
 Un budget mensuel calculé à partir du salaire : plafonds en pourcentage et en euros, tolérance pour les cafés, les achats en ligne et les sorties, réserve de sécurité, projets, investissement, conseils et « khotta », un plan calculé à partir du salaire et des charges.
 
-L'univers graphique est une création originale inspirée des grimoires. Aucune image officielle n'est utilisée.
+Site personnel de fan, non officiel. Les portraits de `assets/img` viennent d'un montage Black Clover (© Yūki Tabata / Shueisha, TV Tokyo, Pierrot). Le reste du design est original.
 
 Site : https://nostra95.github.io/budget-clair/
 
