@@ -77,11 +77,11 @@ function magicRing() {
 const HEROES = {asta: 'Asta', yuno: 'Yuno', julius: 'Julius', yami: 'Yami'};
 /* Cadrage du visage : panneau de l'accueil, bandeau de page, panneau d'entrée. */
 const ART = {
-  'asta-1': ['50% 37%', '50% 43%', '50% 50%'], 'asta-2': ['50% 30%', '50% 39%', '45% 50%'], 'julius-1': ['50% 4%', '50% 19%', '42% 50%'], 'julius-2': ['50% 35%', '50% 30%', '50% 50%'],
-  'yami-2': ['50% 15%', '50% 23%', '50% 50%'], 'yuno-1': ['50% 45%', '50% 44%', '52% 50%'], 'yuno-2': ['50% 33%', '50% 44%', '30% 50%']
+  'asta-1': ['50% 37%', '50% 43%', '50% 50%'], 'asta-2': ['50% 30%', '50% 39%', '45% 50%'], 'julius-2': ['50% 35%', '50% 30%', '50% 50%'],
+  'yami-2': ['50% 15%', '50% 23%', '50% 50%'], 'yami-3': ['50% 15%', '50% 27%', '50% 50%', 'yami-2'], 'yuno-1': ['50% 45%', '50% 44%', '52% 50%'], 'yuno-2': ['50% 33%', '50% 44%', '30% 50%']
 };
 const who = art => art.split('-')[0];
-const portrait = (art, cls, frame) => h('img', {class: cls, src: `assets/img/${art}.webp`, alt: '', draggable: false, decoding: 'async', style: {'--at': ART[art][frame], '--at-wide': ART[art][1]}});
+const portrait = (art, cls, frame) => h('img', {class: cls + (ART[art][3] ? ' flip' : ''), src: `assets/img/${ART[art][3] ?? art}.webp`, alt: '', draggable: false, decoding: 'async', style: {'--at': ART[art][frame], '--at-wide': ART[art][1]}});
 /* En-tête de page avec un personnage. */
 function pageHead(art, title, sub, ...actions) {
   return h('div', {class: 'head banner-head ' + who(art)}, h('div', {class: 'banner-text'}, h('h1', null, title), sub && h('p', null, sub), actions.some(Boolean) && h('div', {class: 'btns'}, actions)), h('div', {class: 'banner-art', 'aria-hidden': 'true'}, magicRing(), portrait(art, 'banner-img', 1)));
@@ -425,7 +425,7 @@ function salaryHero() {
       wasGate = true;
       commit('Salaire enregistré. Ajoute maintenant tes charges fixes.');
     }}, wrapMoney(input), h('button', {type: 'submit', class: 'btn accent'}, 'Calculer'), error),
-    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff6e6'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))], 'good', ['Bienvenue. On commence par ton salaire.'], 'julius-1');
+    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff6e6'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))], 'good', ['Bienvenue. On commence par ton salaire.'], 'asta-2');
 }
 function hero(data, tips) {
   const actions = h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'accent', 'plus'), btn('Je peux l’acheter ?', () => buyDialog(), 'ghost', 'bag'));
@@ -453,7 +453,7 @@ function hero(data, tips) {
     h('p', {class: 'lead'}, data.phase === 'future' ? `En ${monthName(month)}, tu pourras te faire plaisir avec` : 'Tu peux encore te faire plaisir avec'),
     h('div', {class: 'num'}, countUp('hero', value)),
     h('p', {class: 'explain'}, data.phase === 'current' && data.daysLeft > 7 ? ['Soit ', h('b', null, money(Math.floor(data.weekly / 100) * 100) + ' par semaine'), ` jusqu’au ${until}. `] : data.phase === 'current' ? [`Pour tenir jusqu’au ${until}. `] : null,
-      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.'), actions], worried ? 'warn' : 'good', worried ? warn : good, worried ? 'yami-2' : ['yuno-1', 'julius-1', 'asta-2'][Number(now().slice(8)) % 3]);
+      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.'), actions], worried ? 'warn' : 'good', worried ? warn : good, worried ? 'yami-2' : ['asta-2', 'yami-3', 'asta-1'][Number(now().slice(8)) % 3]);
 }
 function subTile(sub, data) {
   const over = sub.left < 0, weekly = data.daysLeft > 7 ? Math.floor(sub.available * 7 / data.daysLeft / 100) * 100 : 0;
@@ -672,7 +672,7 @@ function savingsView() {
   const moves = [...data.deposits].sort((a, b) => a.date < b.date ? 1 : -1);
   const needed = core.sum(p.projects.map(item => core.projectStatus(p, item, month).perMonth ?? 0));
   return h('div', null,
-    pageHead('yuno-1', 'Épargne', data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(core.sum(SAVING_KEYS.map(key => env[key].budget)))}, dont ${money(data.saved)} déjà versés.`,
+    pageHead('asta-1', 'Épargne', data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(core.sum(SAVING_KEYS.map(key => env[key].budget)))}, dont ${money(data.saved)} déjà versés.`,
       btn('Verser', () => depositDialog(), 'primary', 'down'), btn('Retirer', () => depositDialog('safety', true), '', 'up')),
     h('section', {class: 'card reserve', style: {'--c': 'var(--savings)'}},
       h('div', {class: 'card-head'}, h('h2', null, 'Réserve de sécurité'), h('button', {type: 'button', class: 'link small', onclick: reserveDialog}, 'Régler l’objectif')),
@@ -706,7 +706,7 @@ function historyView() {
   const max = Math.max(1, ...months.map(data => Math.max(data.income ?? 0, data.spent + data.saved)));
   const rough = max / 4, power = 10 ** Math.floor(Math.log10(rough)), step = [1, 2, 2.5, 5, 10].map(k => k * power).find(k => k >= rough), top = step * Math.ceil(max / step);
   const ticks = Array.from({length: Math.round(top / step) + 1}, (_, i) => i * step);
-  const head = pageHead('julius-2', 'Historique', `Jusqu’à ${monthName(month)}.`,
+  const head = pageHead('yami-3', 'Historique', `Jusqu’à ${monthName(month)}.`,
     h('div', {class: 'seg', role: 'group', 'aria-label': 'Période'}, [6, 12].map(count => h('button', {type: 'button', 'aria-pressed': String(historyCount === count), onclick: () => { historyCount = count; render(); }}, count + ' mois'))));
   if (!months.length) return h('div', null, head, h('section', {class: 'card empty'}, h('p', null, 'L’historique apparaît dès que tu saisis un salaire ou une dépense.')));
   return h('div', null, head,
@@ -752,7 +752,7 @@ function settingsView() {
   const p = profile(), data = compute();
   const salary = data.salary;
   return h('div', null,
-    pageHead('julius-1', 'Réglages', 'Ton salaire, tes parts et tes données.'),
+    pageHead('asta-2', 'Réglages', 'Ton salaire, tes parts et tes données.'),
     h('div', {class: 'cols'}, h('div', null,
       h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Salaire')),
         h('div', {class: 'between', style: {'align-items': 'center'}}, h('div', null, h('strong', {class: 'num', style: {'font-size': '1.9rem'}}, money(salary.amount)),
@@ -1140,7 +1140,7 @@ function gateView() {
     render();
     openBook();
   };
-  return h('main', {class: 'gate', id: 'main', tabIndex: -1}, h('div', {class: 'trio', 'aria-hidden': 'true'}, ['julius-1', 'yuno-1', 'asta-1', 'yami-2'].map(art => h('div', {class: 'panel ' + who(art)}, portrait(art, '', 2)))), h('div', {class: 'card enter'}, brand(),
+  return h('main', {class: 'gate', id: 'main', tabIndex: -1}, h('div', {class: 'trio', 'aria-hidden': 'true'}, ['asta-1', 'yami-2', 'yuno-1'].map(art => h('div', {class: 'panel ' + who(art)}, portrait(art, '', 2)))), h('div', {class: 'card enter'}, brand(),
     h('div', null, h('h1', null, state.profiles.length ? 'Bon retour' : 'Ouvre ton grimoire'), h('p', {class: 'soft', style: {'margin-top': '8px'}}, state.profiles.length ? 'Choisis ton profil.' : 'Saisis ton salaire et tes dépenses. Le site te dit ce que tu peux encore dépenser et combien mettre de côté.')),
     notice && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, notice),
     !storageOk && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, 'L’enregistrement est bloqué dans ce navigateur.'),
@@ -1179,7 +1179,7 @@ document.addEventListener('visibilitychange', () => {
 
 load();
 render();
-addEventListener('load', () => { for (const art of Object.keys(ART)) new Image().src = `assets/img/${art}.webp`; });
+addEventListener('load', () => { for (const art of Object.keys(ART)) if (!ART[art][3]) new Image().src = `assets/img/${art}.webp`; });
 try {
   if (profile() && !sessionStorage.getItem('budget-clair-ouvert')) openBook();
   sessionStorage.setItem('budget-clair-ouvert', '1');
