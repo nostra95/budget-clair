@@ -74,11 +74,17 @@ function magicRing() {
     svgNode('circle', {r: 97}), svgNode('circle', {r: 83}), svgNode('circle', {r: 56}), ...ticks,
     ...[0, 36].map(turn => svgNode('path', {d: 'M0 -83L48.800 67.100 -78.900 -25.600H78.900L-48.800 67.100z', transform: `rotate(${turn})`, opacity: turn ? .35 : 1})));
 }
-const HEROES = {asta: 'Asta', yuno: 'Yuno', julius: 'Julius'};
-const portrait = (key, cls) => h('img', {class: cls, src: `assets/img/${key}.webp`, alt: '', draggable: false, decoding: 'async'});
+const HEROES = {asta: 'Asta', yuno: 'Yuno', julius: 'Julius', yami: 'Yami'};
+/* Cadrage du visage : panneau de l'accueil, bandeau de page, panneau d'entrée. */
+const ART = {
+  'asta-1': ['50% 37%', '50% 43%', '50% 50%'], 'asta-2': ['50% 30%', '50% 39%', '45% 50%'], 'julius-1': ['50% 4%', '50% 19%', '42% 50%'], 'julius-2': ['50% 35%', '50% 30%', '50% 50%'],
+  'yami-2': ['50% 15%', '50% 23%', '50% 50%'], 'yuno-1': ['50% 45%', '50% 44%', '52% 50%'], 'yuno-2': ['50% 33%', '50% 44%', '30% 50%']
+};
+const who = art => art.split('-')[0];
+const portrait = (art, cls, frame) => h('img', {class: cls, src: `assets/img/${art}.webp`, alt: '', draggable: false, decoding: 'async', style: {'--at': ART[art][frame], '--at-wide': ART[art][1]}});
 /* En-tête de page avec un personnage. */
-function pageHead(key, title, sub, ...actions) {
-  return h('div', {class: 'head banner-head ' + key}, h('div', {class: 'banner-text'}, h('h1', null, title), sub && h('p', null, sub), actions.some(Boolean) && h('div', {class: 'btns'}, actions)), h('div', {class: 'banner-art', 'aria-hidden': 'true'}, magicRing(), portrait(key, 'banner-img')));
+function pageHead(art, title, sub, ...actions) {
+  return h('div', {class: 'head banner-head ' + who(art)}, h('div', {class: 'banner-text'}, h('h1', null, title), sub && h('p', null, sub), actions.some(Boolean) && h('div', {class: 'btns'}, actions)), h('div', {class: 'banner-art', 'aria-hidden': 'true'}, magicRing(), portrait(art, 'banner-img', 1)));
 }
 /* Le petit trèfle des listes vides. */
 function palSvg(mood) {
@@ -384,21 +390,22 @@ function homeView() {
         safetyMini(data))));
 }
 let heroLine = 0;
-function companion(mood, lines, key) {
+function companion(mood, lines, art) {
+  const key = who(art);
   const line = () => lines[(heroLine + Number(now().slice(8))) % lines.length];
   const bubble = () => h('div', {class: 'bubble', 'aria-live': 'polite'}, h('b', null, HEROES[key]), line());
-  const who = h('button', {type: 'button', class: 'fighter', 'aria-label': `${HEROES[key]} : un autre message`, onclick: () => {
+  const fighter = h('button', {type: 'button', class: 'fighter', 'aria-label': `${HEROES[key]} : un autre message`, onclick: () => {
     heroLine++;
     scene.querySelector('.bubble').replaceWith(bubble());
-    who.classList.remove('hit');
-    void who.offsetWidth;
-    who.classList.add('hit');
-  }, onanimationend: event => { if (event.animationName === 'hit') who.classList.remove('hit'); }}, portrait(key, 'fighter-img'));
-  const scene = h('div', {class: `scene ${mood} ${key}`}, magicRing(), who, bubble());
+    fighter.classList.remove('hit');
+    void fighter.offsetWidth;
+    fighter.classList.add('hit');
+  }, onanimationend: event => { if (event.animationName === 'hit') fighter.classList.remove('hit'); }}, portrait(art, 'fighter-img', 0));
+  const scene = h('div', {class: `scene ${mood} ${key}`}, magicRing(), fighter, bubble());
   return scene;
 }
 const embers = () => h('div', {class: 'embers', 'aria-hidden': 'true'}, Array.from({length: 16}, (_, i) => h('i', {style: {'--x': (i * 37 + 11) % 100 + '%', '--s': 2 + i % 3 + 'px', '--t': 5 + i % 5 + 's', '--d': -(i * 1.3) + 's', '--dx': (i % 2 ? 40 : -30) + 'px'}})));
-const heroShell = (cls, body, mood, lines, key) => h('section', {class: 'hero ' + cls}, h('div', {class: 'aura', 'aria-hidden': 'true'}), embers(), h('div', {class: 'hero-text'}, body), companion(mood, lines, key));
+const heroShell = (cls, body, mood, lines, art) => h('section', {class: `hero ${cls} by-${who(art)}`}, h('div', {class: 'aura', 'aria-hidden': 'true'}), embers(), h('div', {class: 'hero-text'}, body), companion(mood, lines, art));
 
 function salaryHero() {
   const input = moneyInput({name: 'net', placeholder: '2 000', 'aria-label': 'Salaire net en euros', autocomplete: 'off'});
@@ -418,7 +425,7 @@ function salaryHero() {
       wasGate = true;
       commit('Salaire enregistré. Ajoute maintenant tes charges fixes.');
     }}, wrapMoney(input), h('button', {type: 'submit', class: 'btn accent'}, 'Calculer'), error),
-    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff6e6'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))], 'good', ['Bienvenue. On commence par ton salaire.'], 'julius');
+    h('p', {class: 'small explain'}, h('button', {type: 'button', class: 'link', style: {color: '#fff6e6'}, onclick: () => salaryDialog()}, 'Je connais seulement mon brut'))], 'good', ['Bienvenue. On commence par ton salaire.'], 'julius-1');
 }
 function hero(data, tips) {
   const actions = h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'accent', 'plus'), btn('Je peux l’acheter ?', () => buyDialog(), 'ghost', 'bag'));
@@ -428,7 +435,7 @@ function hero(data, tips) {
       h('p', {class: 'lead'}, lost ? `En ${monthName(month)}, tu as dépassé de` : `En ${monthName(month)}, il t’est resté`),
       h('div', {class: 'num'}, countUp('hero', Math.abs(data.cash))),
       h('p', {class: 'explain'}, `Sur ${money(data.income)} de rentrées : `, h('b', null, money(data.spent)), ' dépensés et ', h('b', null, money(data.saved)), ' mis de côté.'),
-      h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'ghost', 'plus'))], lost ? 'warn' : 'good', [lost ? 'Cette page est tournée. On fait mieux sur la suivante.' : 'Une page bien remplie.'], 'yuno');
+      h('div', {class: 'hero-actions'}, btn('Ajouter une dépense', () => expenseDialog(), 'ghost', 'plus'))], lost ? 'warn' : 'good', [lost ? 'Cette page est tournée. On fait mieux sur la suivante.' : 'Une page bien remplie.'], 'julius-2');
   }
   const value = data.tolerance, budget = data.envelopes.leisure.budget;
   const until = `${data.days} ${monthName(month).split(' ')[0]}`;
@@ -437,7 +444,7 @@ function hero(data, tips) {
       h('p', {class: 'lead'}, value === 0 ? 'Pour te faire plaisir, il te reste' : 'Ta tolérance plaisir est dépassée de'),
       h('div', {class: 'num'}, countUp('hero', -value)),
       h('p', {class: 'explain'}, value === 0 ? 'Plus de café ni d’achat en ligne avant le mois prochain.' : `Pause sur les cafés et les achats en ligne jusqu’au ${until}. Ce dépassement mord sur l’argent prévu pour tes autres enveloppes.`), actions],
-    'bad', ['Aïe ! On range la carte jusqu’au mois prochain.', 'Une mauvaise page ne fait pas un mauvais livre.', 'Vérifie « Je peux l’acheter ? » avant chaque achat.'], 'asta');
+    'bad', ['Aïe ! On range la carte jusqu’au mois prochain.', 'Une mauvaise page ne fait pas un mauvais livre.', 'Vérifie « Je peux l’acheter ? » avant chaque achat.'], 'asta-1');
   }
   const worried = value < budget * 0.2 || tips.some(tip => tip.level === 'critical' || tip.level === 'warn');
   const good = ['On ne lâche rien !', 'Chaque euro a sa mission.', 'Tu gères, continue comme ça.', data.daysLeft > 7 ? `${money(Math.floor(data.weekly / 100) * 100)} cette semaine, pas plus.` : 'Dernière ligne droite du mois !', 'Le jour du salaire, épargne d’abord.'];
@@ -446,7 +453,7 @@ function hero(data, tips) {
     h('p', {class: 'lead'}, data.phase === 'future' ? `En ${monthName(month)}, tu pourras te faire plaisir avec` : 'Tu peux encore te faire plaisir avec'),
     h('div', {class: 'num'}, countUp('hero', value)),
     h('p', {class: 'explain'}, data.phase === 'current' && data.daysLeft > 7 ? ['Soit ', h('b', null, money(Math.floor(data.weekly / 100) * 100) + ' par semaine'), ` jusqu’au ${until}. `] : data.phase === 'current' ? [`Pour tenir jusqu’au ${until}. `] : null,
-      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.'), actions], worried ? 'warn' : 'good', worried ? warn : good, worried ? 'asta' : Number(now().slice(8)) % 2 ? 'yuno' : 'julius');
+      'Tes charges, tes courses, tes imprévus et ton épargne sont déjà mis de côté.'), actions], worried ? 'warn' : 'good', worried ? warn : good, worried ? 'yami-2' : ['yuno-1', 'julius-1', 'asta-2'][Number(now().slice(8)) % 3]);
 }
 function subTile(sub, data) {
   const over = sub.left < 0, weekly = data.daysLeft > 7 ? Math.floor(sub.available * 7 / data.daysLeft / 100) * 100 : 0;
@@ -571,7 +578,7 @@ function khottaView() {
   const simAmount = k.amounts.invest || k.investLater;
 
   return h('div', null,
-    pageHead('yuno', 'Ma khotta', [`Ton salaire : `, h('b', null, money(data.income)), '. Voici où va chaque euro.']),
+    pageHead('yuno-2', 'Ma khotta', [`Ton salaire : `, h('b', null, money(data.income)), '. Voici où va chaque euro.']),
     warn && h('ul', {class: 'tips'}, h('li', {class: 'tip ' + warn[0]}, icon('alert'), h('strong', null, warn[1]), h('p', null, warn[2]), warn[3] && h('button', {type: 'button', class: 'link', onclick: () => go(warn[3])}, 'Ajouter mes charges'))),
     h('section', {class: 'khotta-part'}, h('h2', null, h('span', {class: 'part-no'}, '1'), 'Ton salaire en trois parts'),
       h('div', {class: 'tri-bar', 'aria-hidden': 'true'}, buckets.map(item => h('span', {style: {'--c': `var(--${item.color})`, flex: `${share(item.keys)} 1 0`}}))), bucketCards),
@@ -626,7 +633,7 @@ function expensesView() {
   const total = core.sum(shown.filter(item => item.category).map(item => item.amount));
   const groups = Map.groupBy ? Map.groupBy(shown, item => item.undated ? '' : item.date) : shown.reduce((map, item) => map.set(item.undated ? '' : item.date, [...(map.get(item.undated ? '' : item.date) ?? []), item]), new Map());
   return h('div', null,
-    pageHead('asta', 'Dépenses', filter === 'income' ? `${money(data.extra)} en plus du salaire.` : `${money(total)} dépensés hors charges fixes.`,
+    pageHead('yami-2', 'Dépenses', filter === 'income' ? `${money(data.extra)} en plus du salaire.` : `${money(total)} dépensés hors charges fixes.`,
       btn('Ajouter', () => expenseDialog(), 'primary', 'plus'), btn('Rentrée d’argent', () => incomeDialog(), '', 'wallet'), btn('Charges fixes', () => go('charges'), '', 'repeat'), btn('Historique', () => go('history'), 'only-m', 'chart')),
     h('div', {class: 'filters', role: 'group', 'aria-label': 'Filtrer'}, filters.map(([key, label]) => h('button', {type: 'button', 'aria-pressed': String(filter === key), onclick: () => { filter = key; render(); }}, label))),
     h('section', {class: 'card'}, shown.length ? [...groups].sort((a, b) => a[0] < b[0] ? 1 : -1).map(([date, items]) => [
@@ -645,7 +652,7 @@ function chargesView() {
   const items = data.expenses.filter(item => item.category === 'fixed').sort((a, b) => a.date < b.date ? -1 : 1);
   const dayOf = item => item.undated ? null : Number(item.date.slice(8));
   return h('div', null,
-    pageHead('asta', 'Charges fixes', 'Ce qui revient tous les mois. Un changement vaut à partir du mois affiché.', btn('Ajouter une charge', () => chargeDialog(), 'primary', 'plus')),
+    pageHead('asta-2', 'Charges fixes', 'Ce qui revient tous les mois. Un changement vaut à partir du mois affiché.', btn('Ajouter une charge', () => chargeDialog(), 'primary', 'plus')),
     data.income !== null && h('section', {class: 'card' + (env.left < 0 ? ' over' : ''), style: {'--c': 'var(--fixed)'}},
       h('div', {class: 'between'}, h('div', null, h('strong', {class: 'num', style: {'font-size': '1.9rem'}}, money(env.spent)), h('div', {class: 'soft'}, `${percent(env.share ?? 0)} de tes rentrées`)),
         h('div', {class: 'soft', style: {'text-align': 'right'}}, `Plafond ${money(env.budget)} (${percent(env.plan)})`, h('div', {class: env.left < 0 ? 'neg-text' : ''}, env.left < 0 ? `Dépassé de ${money(-env.left)}` : `Marge de ${money(env.left)}`))),
@@ -665,7 +672,7 @@ function savingsView() {
   const moves = [...data.deposits].sort((a, b) => a.date < b.date ? 1 : -1);
   const needed = core.sum(p.projects.map(item => core.projectStatus(p, item, month).perMonth ?? 0));
   return h('div', null,
-    pageHead('yuno', 'Épargne', data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(core.sum(SAVING_KEYS.map(key => env[key].budget)))}, dont ${money(data.saved)} déjà versés.`,
+    pageHead('yuno-1', 'Épargne', data.income === null ? 'Saisis ton salaire pour calculer combien mettre de côté.' : `Objectif de ${monthName(month)} : ${money(core.sum(SAVING_KEYS.map(key => env[key].budget)))}, dont ${money(data.saved)} déjà versés.`,
       btn('Verser', () => depositDialog(), 'primary', 'down'), btn('Retirer', () => depositDialog('safety', true), '', 'up')),
     h('section', {class: 'card reserve', style: {'--c': 'var(--savings)'}},
       h('div', {class: 'card-head'}, h('h2', null, 'Réserve de sécurité'), h('button', {type: 'button', class: 'link small', onclick: reserveDialog}, 'Régler l’objectif')),
@@ -699,7 +706,7 @@ function historyView() {
   const max = Math.max(1, ...months.map(data => Math.max(data.income ?? 0, data.spent + data.saved)));
   const rough = max / 4, power = 10 ** Math.floor(Math.log10(rough)), step = [1, 2, 2.5, 5, 10].map(k => k * power).find(k => k >= rough), top = step * Math.ceil(max / step);
   const ticks = Array.from({length: Math.round(top / step) + 1}, (_, i) => i * step);
-  const head = pageHead('julius', 'Historique', `Jusqu’à ${monthName(month)}.`,
+  const head = pageHead('julius-2', 'Historique', `Jusqu’à ${monthName(month)}.`,
     h('div', {class: 'seg', role: 'group', 'aria-label': 'Période'}, [6, 12].map(count => h('button', {type: 'button', 'aria-pressed': String(historyCount === count), onclick: () => { historyCount = count; render(); }}, count + ' mois'))));
   if (!months.length) return h('div', null, head, h('section', {class: 'card empty'}, h('p', null, 'L’historique apparaît dès que tu saisis un salaire ou une dépense.')));
   return h('div', null, head,
@@ -745,7 +752,7 @@ function settingsView() {
   const p = profile(), data = compute();
   const salary = data.salary;
   return h('div', null,
-    pageHead('julius', 'Réglages', 'Ton salaire, tes parts et tes données.'),
+    pageHead('julius-1', 'Réglages', 'Ton salaire, tes parts et tes données.'),
     h('div', {class: 'cols'}, h('div', null,
       h('section', {class: 'card'}, h('div', {class: 'card-head'}, h('h2', null, 'Salaire')),
         h('div', {class: 'between', style: {'align-items': 'center'}}, h('div', null, h('strong', {class: 'num', style: {'font-size': '1.9rem'}}, money(salary.amount)),
@@ -1120,7 +1127,7 @@ function importJson() {
 }
 
 /* ---------- Profils ---------- */
-const credit = () => h('p', {class: 'credit'}, 'Site personnel de fan, non officiel. Black Clover © Yūki Tabata / Shueisha, TV Tokyo, Pierrot.');
+const credit = () => h('p', {class: 'credit'}, 'Site personnel de fan, non officiel. Black Clover © Yūki Tabata / Shueisha, TV Tokyo, Pierrot. Fan arts : Arts_Vini67, Dank2001 et leurs auteurs.');
 function gateView() {
   const error = errorBox();
   const name = h('input', {class: 'input', type: 'text', maxLength: 32, placeholder: 'Ton prénom', autocomplete: 'given-name', 'aria-label': 'Prénom'});
@@ -1133,7 +1140,7 @@ function gateView() {
     render();
     openBook();
   };
-  return h('main', {class: 'gate', id: 'main', tabIndex: -1}, h('div', {class: 'trio', 'aria-hidden': 'true'}, ['julius', 'yuno', 'asta'].map(key => h('div', {class: 'panel ' + key}, portrait(key, '')))), h('div', {class: 'card enter'}, brand(),
+  return h('main', {class: 'gate', id: 'main', tabIndex: -1}, h('div', {class: 'trio', 'aria-hidden': 'true'}, ['julius-1', 'yuno-1', 'asta-1', 'yami-2'].map(art => h('div', {class: 'panel ' + who(art)}, portrait(art, '', 2)))), h('div', {class: 'card enter'}, brand(),
     h('div', null, h('h1', null, state.profiles.length ? 'Bon retour' : 'Ouvre ton grimoire'), h('p', {class: 'soft', style: {'margin-top': '8px'}}, state.profiles.length ? 'Choisis ton profil.' : 'Saisis ton salaire et tes dépenses. Le site te dit ce que tu peux encore dépenser et combien mettre de côté.')),
     notice && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, notice),
     !storageOk && h('div', {class: 'banner', role: 'alert', style: {margin: '0'}}, 'L’enregistrement est bloqué dans ce navigateur.'),
@@ -1172,7 +1179,7 @@ document.addEventListener('visibilitychange', () => {
 
 load();
 render();
-for (const key of Object.keys(HEROES)) new Image().src = `assets/img/${key}.webp`;
+addEventListener('load', () => { for (const art of Object.keys(ART)) new Image().src = `assets/img/${art}.webp`; });
 try {
   if (profile() && !sessionStorage.getItem('budget-clair-ouvert')) openBook();
   sessionStorage.setItem('budget-clair-ouvert', '1');

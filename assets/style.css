@@ -123,31 +123,31 @@ button{cursor:pointer;border:0;background:none;padding:0}
 .aura::before,.aura::after{content:"";position:absolute;width:62%;height:130%;right:-8%;top:-15%;border-radius:46% 54% 60% 40%;background:radial-gradient(closest-side,#000 10%,#1a0208 45%,transparent);mix-blend-mode:multiply;animation:aura 9s ease-in-out infinite alternate}
 .aura::after{width:46%;right:6%;background:radial-gradient(closest-side,#ff2f4a66,transparent);mix-blend-mode:screen;animation-duration:6.5s;animation-direction:alternate-reverse}
 .scene{position:absolute;top:0;right:0;bottom:0;width:47%}
-.scene::before{content:"";position:absolute;inset:0;z-index:-1;clip-path:polygon(24% 0,100% 0,100% 100%,0 100%);background:linear-gradient(160deg,#8f1226,#2a0710)}.scene.julius::before{background:linear-gradient(160deg,#5b3a86,#1d1030)}.scene.yuno::before{background:linear-gradient(160deg,#8a6414,#241803)}
+.hero.by-yuno{background:radial-gradient(ellipse at 70% 50%,#0f6b4a 0%,transparent 55%),linear-gradient(115deg,#0c1412 20%,#0b3b2c);box-shadow:inset 0 0 0 1px #e9b94966,0 14px 44px #0f6b4a44}.hero.by-julius{background:radial-gradient(ellipse at 70% 50%,#8a5310 0%,transparent 55%),linear-gradient(115deg,#15100a 20%,#4a2d0a);box-shadow:inset 0 0 0 1px #e9b94966,0 14px 44px #8a531044}.hero.by-yami{background:radial-gradient(ellipse at 70% 50%,#5a1f9c 0%,transparent 55%),linear-gradient(115deg,#100b16 20%,#321159);box-shadow:inset 0 0 0 1px #e9b94966,0 14px 44px #5a1f9c44}
+.by-yuno .aura::after{background:radial-gradient(closest-side,#3dffb066,transparent)}.by-julius .aura::after{background:radial-gradient(closest-side,#ffb84d66,transparent)}.by-yami .aura::after{background:radial-gradient(closest-side,#b45cff66,transparent)}
+.by-yuno .num{text-shadow:0 0 34px #3dffb055}.by-julius .num{text-shadow:0 0 34px #ffb84d55}.by-yami .num{text-shadow:0 0 34px #b45cff66}
+.by-yuno .embers i{background:#a8ffd9;box-shadow:0 0 9px 2px #2ee59a}.by-yami .embers i{background:#e3c2ff;box-shadow:0 0 9px 2px #9a4dff}
 .scene::after{content:"";position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none;background:linear-gradient(#e9b949,#e9b949);clip-path:polygon(24% 0,24.8% 0,.8% 100%,0 100%)}
 .ring{position:absolute;width:300px;height:300px;left:50%;top:50%;margin:-150px;color:#e9b949;opacity:.55;z-index:-1;animation:spin 46s linear infinite;pointer-events:none}
 .fighter{position:absolute;inset:0;clip-path:polygon(24.8% 0,100% 0,100% 100%,.8% 100%);overflow:hidden}
-.fighter-img{position:absolute;right:0;top:0;width:88%;height:100%;object-fit:cover;object-position:50% 34%;animation:breathe 7s ease-in-out infinite;transform-origin:60% 60%;pointer-events:none;user-select:none;filter:drop-shadow(0 0 18px #0009)}
-.fighter-img{-webkit-mask:linear-gradient(90deg,transparent,#000 16%);mask:linear-gradient(90deg,transparent,#000 16%)}
-.yuno .fighter-img{object-position:50% 38%}.asta .fighter-img{object-position:50% 42%}.julius .fighter-img{object-position:50% 30%}
+.fighter-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--at);animation:breathe 7s ease-in-out infinite;transform-origin:60% 45%;pointer-events:none;user-select:none}
 .fighter:focus-visible{outline:3px solid #e9b949;outline-offset:-6px}.fighter.hit{animation:hit .5s var(--ease)}.bad .fighter{animation:shiver .45s linear infinite}
 .bubble{position:absolute;left:-6%;bottom:26px;z-index:2;background:#fdf6e6;color:#22160f;border-radius:4px 14px 14px 14px;padding:10px 15px;font-weight:500;font-size:1.05rem;line-height:1.28;max-width:215px;box-shadow:3px 3px 0 #b5152c,0 10px 26px #0007;animation:pop .45s var(--ease)}
 .bubble b{display:block;font:600 1.2rem/1.1 var(--display);color:#8b1020}
 .mini-pal{width:104px}.mini-pal svg{display:block;width:100%;overflow:visible}.mini-pal .leaves{animation:sway 3.4s ease-in-out infinite;transform-origin:0 -8px}.mini-pal .eyes{animation:blink 4.6s infinite;transform-origin:0 14px}
 .banner-head{position:relative;isolation:isolate;overflow:hidden;display:grid;grid-template-columns:minmax(0,1fr) 270px;align-items:center;gap:16px;min-height:186px;padding:24px 0 24px 28px;border-radius:18px;color:#fff6e6;background:linear-gradient(105deg,#120b0f 25%,#4a0b18);box-shadow:inset 0 0 0 1px #e9b94959}
-.banner-head.yuno{background:linear-gradient(105deg,#100d0b 25%,#57400f)}.banner-head.julius{background:linear-gradient(105deg,#100c14 25%,#3b2358)}
+.banner-head.yuno{background:linear-gradient(105deg,#0c1210 25%,#0c4a36)}.banner-head.julius{background:linear-gradient(105deg,#14100a 25%,#5a380c)}.banner-head.yami{background:linear-gradient(105deg,#100b16 25%,#3d1570)}
 .banner-head::before{content:"";position:absolute;inset:7px;border:1px solid #e9b94938;border-radius:13px;pointer-events:none;z-index:1}
 .banner-head h1{font-size:clamp(2.3rem,5vw,3.1rem)}.banner-head p{color:#efdcc6;font-size:1.12rem}.banner-head p b{color:#fff}.banner-head .btns{margin-top:15px;position:relative;z-index:2}
 .banner-art{position:absolute;right:0;top:0;bottom:0;width:min(46%,400px);z-index:-1;clip-path:polygon(22% 0,100% 0,100% 100%,0 100%);background:linear-gradient(180deg,#ffffff1f,transparent)}
-.banner-art .ring{opacity:.4}.banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 26%;animation:drift 14s ease-in-out infinite alternate;-webkit-mask:linear-gradient(90deg,transparent,#000 30%);mask:linear-gradient(90deg,transparent,#000 30%)}
-.yuno .banner-img{object-position:50% 33%}.asta .banner-img{object-position:50% 40%}
+.banner-art .ring{opacity:.4}.banner-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:var(--at);animation:drift 14s ease-in-out infinite alternate;-webkit-mask:linear-gradient(90deg,transparent,#000 30%);mask:linear-gradient(90deg,transparent,#000 30%)}
 .gate{grid-template-columns:minmax(380px,500px) minmax(0,1fr);padding:0;min-height:100dvh;background:#0c0a0d;color:#f6eedf}
 .gate .card{justify-self:center;width:min(420px,calc(100% - 48px));margin:24px 0;grid-column:1;grid-row:1}
 .trio{justify-self:stretch;grid-column:2;grid-row:1/3;align-self:stretch;display:flex;min-height:100dvh;overflow:hidden;position:relative}
 .trio .panel{position:relative;flex:1;margin-left:-5%;overflow:hidden;clip-path:polygon(17% 0,100% 0,83% 100%,0 100%);animation:panel .8s var(--ease) both}
 .trio .panel:last-child{clip-path:polygon(17% 0,100% 0,100% 100%,0 100%)}
-.trio .julius{background:linear-gradient(#5b3a86,#120c18)}.trio .yuno{background:linear-gradient(#8a6414,#15100a);animation-delay:.12s}.trio .asta{background:linear-gradient(#8f1226,#14080c);animation-delay:.24s}
-.trio img{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;object-position:50% 25%;animation:drift 12s ease-in-out infinite alternate}.trio .julius img{object-position:42% 25%}
+.trio .panel:nth-child(2){animation-delay:.1s}.trio .panel:nth-child(3){animation-delay:.2s}.trio .panel:nth-child(4){animation-delay:.3s}
+.trio img{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;object-position:var(--at);animation:drift 12s ease-in-out infinite alternate}
 .trio::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0c0a0d,transparent 22%),linear-gradient(0deg,#0c0a0d,transparent 26%);pointer-events:none}
 .credit{color:var(--soft);font-size:.85rem;text-align:center;margin-top:34px}.gate .credit{margin:0;padding:0 20px 18px;color:#b9ac99;grid-column:1;grid-row:2;align-self:end}
 
@@ -256,7 +256,7 @@ dialog::backdrop{background:#0b0d1c99;backdrop-filter:blur(3px)}
   .tabbar button{display:grid;justify-items:center;align-content:center;gap:3px;min-height:52px;font-size:.74rem;font-weight:500;color:var(--soft);border-radius:12px}.tabbar button[aria-current]{color:var(--brand);font-weight:700}
   .tabbar .add{align-self:center;justify-self:center;width:54px;height:54px;min-height:0;border-radius:18px;background:var(--brand);color:var(--brand-ink)}.tabbar .add svg.i{width:26px;height:26px}
   .hero{padding:26px 22px;grid-template-columns:minmax(0,1fr);gap:20px}.hero-actions .btn{flex:1 1 210px;padding:0 10px}
-  .hero{min-height:0;padding-bottom:22px}.scene{position:relative;width:auto;height:210px;margin:0 -22px -22px;border-radius:0 0 22px 22px;overflow:hidden}.scene::before,.fighter{clip-path:polygon(0 16%,100% 0,100% 100%,0 100%)}.scene::after{clip-path:polygon(0 16%,100% 0,100% 1.2%,0 17.2%)}.fighter-img{width:70%}.bubble{left:16px;bottom:18px;max-width:170px}
+  .hero{min-height:0;padding-bottom:22px}.scene{position:relative;width:auto;height:250px;margin:0 -22px -22px;border-radius:0 0 22px 22px;overflow:hidden}.scene::before,.fighter{clip-path:polygon(0 16%,100% 0,100% 100%,0 100%)}.scene::after{clip-path:polygon(0 16%,100% 0,100% 1.2%,0 17.2%)}.fighter-img{object-position:var(--at-wide)}.bubble{left:14px;bottom:12px;max-width:170px}
   .banner-head{grid-template-columns:minmax(0,1fr);min-height:150px;padding:22px 20px}.banner-text{max-width:100%}.banner-text h1,.banner-text p{max-width:60%}.banner-art{width:44%}.banner-head .btns .btn{padding:0 13px}
   .gate{grid-template-columns:minmax(0,1fr);grid-template-rows:auto 1fr auto}.trio{grid-column:1;grid-row:1;min-height:0;height:34dvh}.trio::after{background:linear-gradient(0deg,#0c0a0d,transparent 45%)}.gate .card{grid-row:2;width:calc(100% - 32px);margin:-28px 0 18px;padding:26px 22px;align-self:start;z-index:1}.gate .credit{grid-row:3}
   .card{padding:20px 18px;border-radius:18px}.tiles{grid-template-columns:minmax(0,1fr)}.tile{grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center}.tile .meter,.tile p{grid-column:1/-1}.tile p{min-height:0}.tile .num{font-size:1.55rem}

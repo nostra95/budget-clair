@@ -2,7 +2,7 @@
 
 Un budget mensuel calculé à partir du salaire : plafonds en pourcentage et en euros, tolérance pour les cafés, les achats en ligne et les sorties, réserve de sécurité, projets, investissement, conseils et « khotta », un plan calculé à partir du salaire et des charges.
 
-Site personnel de fan, non officiel. Les portraits de `assets/img` viennent d'un montage Black Clover (© Yūki Tabata / Shueisha, TV Tokyo, Pierrot). Le reste du design est original.
+Site personnel de fan, non officiel. Les images de `assets/img` montrent des personnages de Black Clover (© Yūki Tabata / Shueisha, TV Tokyo, Pierrot). Plusieurs sont des fan arts, signés notamment Arts_Vini67 et Dank2001 ; ils appartiennent à leurs auteurs. Le reste du design est original.
 
 Site : https://nostra95.github.io/budget-clair/
 
