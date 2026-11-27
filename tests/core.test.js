@@ -84,7 +84,7 @@ test('reprise des données de la version 1', () => {
 });
 test('plafonds en euros selon le salaire', () => {
   const d = core.compute(profile(), '2026-11', TODAY);
-  assert.deepEqual(core.ENVELOPES.map(e => d.envelopes[e.key].budget), [100000, 30000, 20000, 10000, 20000, 10000, 10000]);
+  assert.deepEqual(core.ENVELOPES.map(e => d.envelopes[e.key].budget), [100000, 30000, 20000, 10000, 0, 20000, 10000, 10000]);
   assert.equal(d.tolerance, 20000);
   assert.deepEqual(d.subs.map(s => s.limit), [8000, 7000, 5000]);
   assert.deepEqual(d.subs.map(s => s.available), [8000, 7000, 5000]);
@@ -137,7 +137,7 @@ test('je peux l’acheter ?', () => {
 test('un plan sans investissement est gardé, pas remplacé', () => {
   const old = {fixed: 60, essentials: 15, leisure: 5, unexpected: 5, safety: 10, projects: 5};
   const p = core.cleanProfile({name: 'A', plan: old});
-  assert.deepEqual(p.plan, {...old, invest: 0});
+  assert.deepEqual(p.plan, {...old, invest: 0, debts: 0});
   assert.equal(core.cleanState({version: 2, theme: 'auto', profiles: []}).theme, 'dark');
 });
 test('khotta : toujours 100 %, couvre les charges, épargne quand c’est possible', () => {
@@ -158,7 +158,7 @@ test('khotta : la réserve passe avant l’investissement', () => {
   core.addCharge(p, '2026-01', {label: 'Loyer', amount: 70000});
   const get = balance => { p.safety.initial = balance; return core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY); };
   const k = get(0);
-  assert.deepEqual(k.plan, {fixed: 35, essentials: 15, leisure: 20, unexpected: 5, safety: 20, projects: 5, invest: 0});
+  assert.deepEqual(k.plan, {fixed: 35, essentials: 15, leisure: 20, unexpected: 5, debts: 0, safety: 20, projects: 5, invest: 0});
   assert.equal(k.monthly, 100000);
   assert.deepEqual([0, 100000, 300000, 600000].map(v => get(v).stage), [0, 1, 2, 3]);
   assert.deepEqual([0, 100000, 300000, 600000].map(v => get(v).plan.invest), [0, 5, 13, 16]);
@@ -218,4 +218,80 @@ test('historique sans mois vides avant le début', () => {
   assert.deepEqual(core.history(profile(), '2026-03', 6, TODAY).map(d => d.month), ['2026-01', '2026-02', '2026-03']);
   assert.equal(core.addMonths('2026-01', -1), '2025-12');
   assert.equal(core.addMonths('2026-12', 1), '2027-01');
+});
+
+/* ---------- Crédits ---------- */
+const debt = (p, fields) => { const d = {id: core.newId(), name: 'Karim', kind: 'person', amount: 60000, start: '2026-11', monthly: null, day: null, deadline: null, ...fields}; p.debts.push(d); return d; };
+test('crédits : un crédit à mensualité compte dans les charges fixes jusqu’au bout', () => {
+  const p = profile();
+  const car = debt(p, {name: 'Crédit voiture', kind: 'bank', amount: 50000, start: '2026-09', monthly: 20000, day: 5});
+  const fixed = month => core.compute(p, month, TODAY).envelopes.fixed.spent;
+  assert.deepEqual(['2026-08', '2026-09', '2026-10', '2026-11', '2026-12'].map(fixed), [0, 20000, 20000, 10000, 0]);
+  const s = core.debtStatus(p, car, '2026-10');
+  assert.equal(s.remaining, 10000);
+  assert.equal(s.end, '2026-11');
+  assert.equal(core.debtStatus(p, car, '2026-11').done, true);
+  /* Un remboursement anticipé raccourcit le crédit. */
+  p.repayments.push({id: 'r', date: '2026-10-20', debt: car.id, amount: 10000});
+  assert.equal(fixed('2026-11'), 0);
+  assert.equal(core.compute(p, '2026-10', TODAY).envelopes.debts.spent, 10000);
+});
+test('crédits : rembourser un proche baisse le reste sur le compte, pas la dette des autres', () => {
+  const p = profile();
+  const k = debt(p, {amount: 30000});
+  p.repayments.push({id: 'r', date: '2026-11-03', debt: k.id, amount: 10000});
+  const d = core.compute(p, '2026-11', TODAY);
+  assert.equal(d.repaid, 10000);
+  assert.equal(d.cash, 200000 - 10000);
+  const s = core.debtStatus(p, k, '2026-11');
+  assert.deepEqual([s.before, s.remaining, s.paid], [30000, 20000, 10000]);
+  assert.equal(core.debtStatus(p, k, '2026-12').before, 20000);
+});
+test('crédits : plan de remboursement, dates promises puis la plus petite dette', () => {
+  const p = profile();
+  const big = debt(p, {name: 'Sara', amount: 90000});
+  const small = debt(p, {name: 'Yassine', amount: 20000});
+  const promised = debt(p, {name: 'Karim', amount: 40000, deadline: '2027-02'}); // 4 mois : 100 € par mois minimum
+  const plan = core.debtPlan(p, '2026-11', 25000);
+  assert.deepEqual(plan.items.map(i => i.debt.name), ['Karim', 'Yassine', 'Sara']);
+  assert.deepEqual(plan.items.map(i => i.suggested), [10000, 15000, 0]);
+  assert.equal(plan.items.find(i => i.debt === small).payoff, '2026-12');
+  assert.equal(plan.items.find(i => i.debt === promised).risk, false);
+  assert.equal(plan.free, '2027-04'); // 1500 € à 250 € par mois : 6 mois
+  assert.equal(core.debtPlan(p, '2026-11', 5000).items[0].risk, true);
+  assert.equal(core.debtPlan(p, '2026-11', 0).free, null);
+  assert.equal(big.amount, 90000);
+});
+test('khotta : avec une dette, on rembourse avant d’investir', () => {
+  const p = profile();
+  core.addCharge(p, '2026-01', {label: 'Loyer', amount: 70000});
+  p.safety.initial = 100000; // étape 2 : sans dette, 5 % investis
+  debt(p, {amount: 300000});
+  const k = core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY);
+  assert.equal(core.sum(Object.values(k.plan)), 100);
+  assert.equal(k.plan.invest, 0);
+  assert.equal(k.plan.debts, 15); // 60 % des 25 % d'épargne
+  assert.equal(k.amounts.debts, 30000);
+  assert.equal(k.debtFree, '2027-08'); // 3000 € à 300 € par mois
+  /* Presque fini : la part est réduite à ce qui reste. */
+  p.debts[0].amount = 5000;
+  const end = core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY);
+  assert.equal(end.plan.debts, 3);
+  assert.equal(core.sum(Object.values(end.plan)), 100);
+  /* Une date promise proche passe avant le reste de l'épargne. */
+  p.debts[0].amount = 120000;
+  p.debts[0].deadline = '2026-12';
+  assert.equal(core.recommend(p, core.compute(p, '2026-11', TODAY), TODAY).plan.debts, 25);
+});
+test('crédits : conseils et sauvegarde', () => {
+  const p = profile();
+  const k = debt(p, {amount: 30000, deadline: '2027-01'});
+  p.repayments.push({id: 'r', date: '2026-11-03', debt: k.id, amount: 1000});
+  const tips = core.advise(p, core.compute(p, '2026-11', TODAY), null);
+  assert.ok(tips.some(t => t.level === 'warn' && t.action === 'khotta'));
+  const copy = core.cleanProfile(JSON.parse(JSON.stringify(p)));
+  assert.deepEqual(copy.debts, p.debts);
+  assert.deepEqual(copy.repayments, p.repayments);
+  assert.equal(core.cleanProfile({...p, debts: []}).repayments.length, 0);
+  assert.equal(core.firstMonth({...core.createProfile('v'), debts: [k]}), '2026-11');
 });
